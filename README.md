@@ -2,17 +2,15 @@
 
 -----
 
-## Table of Contents
-
-- [Installation](#installation)
-- [License](#license)
+WIP: Guidance for avoiding common pitfalls when producing and using datacubes.
 
 ## Installation
 
 ```console
 git clone https://github.com/pangeo-data/datacube-worst-practices.git
 cd datacube-worst-practices
-``
+hatch env create docs
+```
 
 ## License
 
