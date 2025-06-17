@@ -1,8 +1,6 @@
-# Datacube Worst Practices
+# Guidance for avoiding common pitfalls when producing and using datacubes.
 
------
-
-WIP: Guidance for avoiding common pitfalls when producing and using datacubes.
+STATUS: Work in progress.
 
 ## Installation
 
