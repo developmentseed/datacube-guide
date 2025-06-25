@@ -5,6 +5,7 @@ import time
 import random
 from typing import List, Literal
 from .utils import array_storage_size
+from pint import Quantity
 
 
 def _measure_zarr_random_access_performance(
@@ -114,24 +115,29 @@ def benchmark_zarr_array(
     )
 
     stats = {
-        "mean_time_seconds": np.mean(times),
-        "median_time_seconds": np.median(times),
-        "std_time_seconds": np.std(times),
-        "min_time_seconds": np.min(times),
-        "max_time_seconds": np.max(times),
+        "mean_time": Quantity(np.mean(times), "seconds"),
+        "median_time": Quantity(np.median(times), "seconds"),
+        "std_time": Quantity(np.std(times), "seconds"),
+        "min_time": Quantity(np.min(times), "seconds"),
+        "max_time": Quantity(np.max(times), "seconds"),
         "total_samples": num_samples,
         "access_pattern": access_pattern,
         "array_shape": zarr_array.shape,
         "chunk_shape": zarr_array.chunks,
+        "chunk_size": Quantity(
+            np.prod(zarr_array.chunks) * zarr_array.dtype.itemsize, "bytes"
+        ).to("MB"),
+        "nchunks": zarr_array.nchunks,
         "shard_shape": getattr(
             zarr_array, "shards", None
         ),  # Handle case where shards might not exist
         "array_dtype": zarr_array.dtype,
-        "array_nbytes_memory": zarr_array.nbytes,
-        "array_nbytes_store": array_storage_size(zarr_array),
+        "array_size_memory": Quantity(zarr_array.nbytes, "bytes").to("GB"),
+        "array_size_store": Quantity(array_storage_size(zarr_array), "bytes").to("GB"),
+        "array_compressors": zarr_array.compressors,
     }
-    stats["compression_ration"] = (
-        stats["array_nbytes_store"] / stats["array_nbytes_memory"]
+    stats["compression_ratio"] = (
+        f"{(stats["array_size_memory"] / stats["array_size_store"]).magnitude:.2f}:1"  # type: ignore[operator]
     )
 
     return stats
