@@ -139,6 +139,7 @@ def benchmark_zarr_array(
     stats["compression_ratio"] = (
         f"{(stats["array_size_memory"] / stats["array_size_store"]).magnitude:.2f}:1"  # type: ignore[operator]
     )
+    stats["zarr_concurrency"] = zarr.config.get("async.concurrency")
 
     return stats
 
