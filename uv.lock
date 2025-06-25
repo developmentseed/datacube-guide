@@ -103,6 +103,26 @@ wheels = [
 ]
 
 [[package]]
+name = "arro3-core"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/3f/52336dca7f4784b778d458f7071e5746db33825cb57509fd35196522e5df/arro3_core-0.5.1-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:bb7fba3c4324db78615b5440ac51f46022ce7674489d96f8916491c117102e47", size = 2438140 },
+    { url = "https://files.pythonhosted.org/packages/b0/02/32d2c8fa81b33e587b9b6be0a71a0e46523f50f1b20d1903b0fb3f1d9cad/arro3_core-0.5.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:39bad825cb042f22be5f5ab019844541398a3393d154e3675013b4ebb825b3b9", size = 2145410 },
+    { url = "https://files.pythonhosted.org/packages/d1/72/4632d4240f2d10de16050314263932c80a7bfabab22688e3dcdc1505a0d6/arro3_core-0.5.1-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c6520a6cc6e22fe2f8064dc8e4f93961e05fb9a486c921f71a5ef49843c27d24", size = 2591203 },
+    { url = "https://files.pythonhosted.org/packages/03/c6/8fd3fcf7a1ccfaeb62827457785293a5ad1a8bf44623903d7e5d99212cb5/arro3_core-0.5.1-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:63e9e96c034177721b8d5af36d4deff3e93411a24b009b4565e08711cddbbc75", size = 2636665 },
+    { url = "https://files.pythonhosted.org/packages/6a/84/f5df7ed0eeb1fdaa3cd4d19fb829dca791c3b5108e5f5350a50ff34da914/arro3_core-0.5.1-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:639083eb1712bd39540761a25ab786ba9cb51e0710bb77b21499a2914ba076d4", size = 2883496 },
+    { url = "https://files.pythonhosted.org/packages/b4/e1/6ab0dd6f362f95ef855d2ba7aacf55c9dd08c55a3d8c5339eafa20f3e0f3/arro3_core-0.5.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c4876a3c34bd54d970c498e2f61bfb7e36306934fd6acbfa5de497f093972bf0", size = 2536753 },
+    { url = "https://files.pythonhosted.org/packages/53/20/b0d9bd9b6ccac1c53abb29961046364fb1fba84e9ebd3726ff996bb07b53/arro3_core-0.5.1-cp313-cp313-manylinux_2_24_aarch64.whl", hash = "sha256:a4b93fcc5464bd2b638402b56032a1d3cecb78d668d0aa1035d2ee7ee7487abb", size = 2286389 },
+    { url = "https://files.pythonhosted.org/packages/49/21/8338d0a2ede9128dc46f44601b584ec3544f9ee2d43c841307d563e8cdfa/arro3_core-0.5.1-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:8effd284a02b2a685736eb0365528842992a770a3bf544ece4ccc0ed9a7bf703", size = 2721899 },
+    { url = "https://files.pythonhosted.org/packages/67/96/f90db955ed8b8d422d09b15e3b1f759a02e4700021f2e4ac68dd5cedca51/arro3_core-0.5.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:cbc512e90647176528ea09ac18a5d27a47a0ac05755b7924ffcb89923dbf6e38", size = 2431834 },
+    { url = "https://files.pythonhosted.org/packages/88/f3/c58d9769d46b13f6d51ff5998885396ef224eb384a0ebda236ef26a833a7/arro3_core-0.5.1-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:d4d0141a6b7f5744750cc4066f564cfd509df6857704a2a9a29946a7c2f08f2b", size = 2866047 },
+    { url = "https://files.pythonhosted.org/packages/7c/7a/af901793fa426e8b86194654820c3612001b165b25f3bd7adde8d9e7bef4/arro3_core-0.5.1-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:f8c14b496f93906125baccef75703f0ea1c91608c201296bc21a1e916e5eb42c", size = 2792693 },
+    { url = "https://files.pythonhosted.org/packages/2e/97/651eb8358d64d2bf5353db3d31ae6cb06529a07d2be699aa6a27434c6811/arro3_core-0.5.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:40e9db9564f22286310c5304884468b98d4eeb628f71c22f27d527e4219ae247", size = 2706150 },
+    { url = "https://files.pythonhosted.org/packages/f3/af/0d591453490941e7cd2524ccac0398824eabafa745d0a25a758b1de2e361/arro3_core-0.5.1-cp313-cp313-win_amd64.whl", hash = "sha256:bb0b13975c5394cb6a9887495aaf06cad8993893f99911c8aa2b827cd55dd6a8", size = 2612300 },
+]
+
+[[package]]
 name = "asttokens"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -479,11 +499,13 @@ name = "datacube-benchmark"
 version = "0.1.0"
 source = { editable = "packages/datacube-benchmark" }
 dependencies = [
+    { name = "arro3-core" },
     { name = "dask" },
     { name = "hdf5plugin" },
     { name = "numcodecs" },
     { name = "obstore" },
     { name = "pint" },
+    { name = "pyarrow" },
     { name = "rich" },
     { name = "s3fs" },
     { name = "xarray" },
@@ -492,15 +514,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "arro3-core", specifier = ">=0.5.1" },
     { name = "dask", specifier = ">=2025.5.1" },
     { name = "hdf5plugin", specifier = ">=5.1.0" },
     { name = "numcodecs", specifier = ">=0.16.1" },
     { name = "obstore", specifier = ">=0.6.0" },
     { name = "pint", specifier = ">=0.24.4" },
+    { name = "pyarrow", specifier = ">=20.0.0" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "s3fs", specifier = ">=0.4.2" },
     { name = "xarray", specifier = ">=2025.6.1" },
-    { name = "zarr", specifier = ">=3.0.8" },
+    { name = "zarr", git = "https://github.com/zarr-developers/zarr-python" },
 ]
 
 [[package]]
@@ -1856,6 +1880,32 @@ wheels = [
 ]
 
 [[package]]
+name = "pyarrow"
+version = "20.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/ee/a7810cb9f3d6e9238e61d312076a9859bf3668fd21c69744de9532383912/pyarrow-20.0.0.tar.gz", hash = "sha256:febc4a913592573c8d5805091a6c2b5064c8bd6e002131f01061797d91c783c1", size = 1125187 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/aa/daa413b81446d20d4dad2944110dcf4cf4f4179ef7f685dd5a6d7570dc8e/pyarrow-20.0.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:a15532e77b94c61efadde86d10957950392999503b3616b2ffcef7621a002893", size = 30798501 },
+    { url = "https://files.pythonhosted.org/packages/ff/75/2303d1caa410925de902d32ac215dc80a7ce7dd8dfe95358c165f2adf107/pyarrow-20.0.0-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:dd43f58037443af715f34f1322c782ec463a3c8a94a85fdb2d987ceb5658e061", size = 32277895 },
+    { url = "https://files.pythonhosted.org/packages/92/41/fe18c7c0b38b20811b73d1bdd54b1fccba0dab0e51d2048878042d84afa8/pyarrow-20.0.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aa0d288143a8585806e3cc7c39566407aab646fb9ece164609dac1cfff45f6ae", size = 41327322 },
+    { url = "https://files.pythonhosted.org/packages/da/ab/7dbf3d11db67c72dbf36ae63dcbc9f30b866c153b3a22ef728523943eee6/pyarrow-20.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b6953f0114f8d6f3d905d98e987d0924dabce59c3cda380bdfaa25a6201563b4", size = 42411441 },
+    { url = "https://files.pythonhosted.org/packages/90/c3/0c7da7b6dac863af75b64e2f827e4742161128c350bfe7955b426484e226/pyarrow-20.0.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:991f85b48a8a5e839b2128590ce07611fae48a904cae6cab1f089c5955b57eb5", size = 40677027 },
+    { url = "https://files.pythonhosted.org/packages/be/27/43a47fa0ff9053ab5203bb3faeec435d43c0d8bfa40179bfd076cdbd4e1c/pyarrow-20.0.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:97c8dc984ed09cb07d618d57d8d4b67a5100a30c3818c2fb0b04599f0da2de7b", size = 42281473 },
+    { url = "https://files.pythonhosted.org/packages/bc/0b/d56c63b078876da81bbb9ba695a596eabee9b085555ed12bf6eb3b7cab0e/pyarrow-20.0.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:9b71daf534f4745818f96c214dbc1e6124d7daf059167330b610fc69b6f3d3e3", size = 42893897 },
+    { url = "https://files.pythonhosted.org/packages/92/ac/7d4bd020ba9145f354012838692d48300c1b8fe5634bfda886abcada67ed/pyarrow-20.0.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e8b88758f9303fa5a83d6c90e176714b2fd3852e776fc2d7e42a22dd6c2fb368", size = 44543847 },
+    { url = "https://files.pythonhosted.org/packages/9d/07/290f4abf9ca702c5df7b47739c1b2c83588641ddfa2cc75e34a301d42e55/pyarrow-20.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:30b3051b7975801c1e1d387e17c588d8ab05ced9b1e14eec57915f79869b5031", size = 25653219 },
+    { url = "https://files.pythonhosted.org/packages/95/df/720bb17704b10bd69dde086e1400b8eefb8f58df3f8ac9cff6c425bf57f1/pyarrow-20.0.0-cp313-cp313t-macosx_12_0_arm64.whl", hash = "sha256:ca151afa4f9b7bc45bcc791eb9a89e90a9eb2772767d0b1e5389609c7d03db63", size = 30853957 },
+    { url = "https://files.pythonhosted.org/packages/d9/72/0d5f875efc31baef742ba55a00a25213a19ea64d7176e0fe001c5d8b6e9a/pyarrow-20.0.0-cp313-cp313t-macosx_12_0_x86_64.whl", hash = "sha256:4680f01ecd86e0dd63e39eb5cd59ef9ff24a9d166db328679e36c108dc993d4c", size = 32247972 },
+    { url = "https://files.pythonhosted.org/packages/d5/bc/e48b4fa544d2eea72f7844180eb77f83f2030b84c8dad860f199f94307ed/pyarrow-20.0.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7f4c8534e2ff059765647aa69b75d6543f9fef59e2cd4c6d18015192565d2b70", size = 41256434 },
+    { url = "https://files.pythonhosted.org/packages/c3/01/974043a29874aa2cf4f87fb07fd108828fc7362300265a2a64a94965e35b/pyarrow-20.0.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3e1f8a47f4b4ae4c69c4d702cfbdfe4d41e18e5c7ef6f1bb1c50918c1e81c57b", size = 42353648 },
+    { url = "https://files.pythonhosted.org/packages/68/95/cc0d3634cde9ca69b0e51cbe830d8915ea32dda2157560dda27ff3b3337b/pyarrow-20.0.0-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:a1f60dc14658efaa927f8214734f6a01a806d7690be4b3232ba526836d216122", size = 40619853 },
+    { url = "https://files.pythonhosted.org/packages/29/c2/3ad40e07e96a3e74e7ed7cc8285aadfa84eb848a798c98ec0ad009eb6bcc/pyarrow-20.0.0-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:204a846dca751428991346976b914d6d2a82ae5b8316a6ed99789ebf976551e6", size = 42241743 },
+    { url = "https://files.pythonhosted.org/packages/eb/cb/65fa110b483339add6a9bc7b6373614166b14e20375d4daa73483755f830/pyarrow-20.0.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:f3b117b922af5e4c6b9a9115825726cac7d8b1421c37c2b5e24fbacc8930612c", size = 42839441 },
+    { url = "https://files.pythonhosted.org/packages/98/7b/f30b1954589243207d7a0fbc9997401044bf9a033eec78f6cb50da3f304a/pyarrow-20.0.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:e724a3fd23ae5b9c010e7be857f4405ed5e679db5c93e66204db1a69f733936a", size = 44503279 },
+    { url = "https://files.pythonhosted.org/packages/37/40/ad395740cd641869a13bcf60851296c89624662575621968dcfafabaa7f6/pyarrow-20.0.0-cp313-cp313t-win_amd64.whl", hash = "sha256:82f1ee5133bd8f49d31be1299dc07f585136679666b502540db854968576faf9", size = 25944982 },
+]
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 source = { registry = "https://pypi.org/simple" }
@@ -2582,18 +2632,14 @@ wheels = [
 
 [[package]]
 name = "zarr"
-version = "3.0.8"
-source = { registry = "https://pypi.org/simple" }
+version = "3.0.9.dev41+g27615fd0"
+source = { git = "https://github.com/zarr-developers/zarr-python#27615fd0d20d189b22aac0477ea05b5eca93137f" }
 dependencies = [
     { name = "donfig" },
     { name = "numcodecs", extra = ["crc32c"] },
     { name = "numpy" },
     { name = "packaging" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/52/60/9652fd0536fbaca8d08cbc1a5572c52e0ce01773297df75da8bb47e45907/zarr-3.0.8.tar.gz", hash = "sha256:88505d095af899a88ae8ac4db02f4650ef0801d2ff6f65b6d1f0a45dcf760a6d", size = 256825 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/3b/e20bdf84088c11f2c396d034506cbffadd53e024111c1aa4585c2aba1523/zarr-3.0.8-py3-none-any.whl", hash = "sha256:7f81e7aec086437d98882aa432209107114bd7f3a9f4958b2af9c6b5928a70a7", size = 205364 },
 ]
 
 [[package]]

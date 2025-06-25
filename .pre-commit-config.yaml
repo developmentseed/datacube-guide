@@ -34,6 +34,10 @@ repos:
           # Tests
           - pytest
           - pint
+          - zarr
+          - xarray
+          - dask
+          - obstore
   - repo: https://github.com/numpy/numpydoc
     rev: v1.8.0
     hooks:

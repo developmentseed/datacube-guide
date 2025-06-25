@@ -1,9 +1,14 @@
-from .create import create_empty_dataarray
+from .create import create_empty_dataarray, create_zarr_store
 from .create import Quantity
-from .chunks import find_chunk_shape
+from .query import benchmark_zarr_array, benchmark_access_patterns
 import numpy as np
 
-__all__ = ["create_empty_dataarray", "find_chunk_shape"]
+__all__ = [
+    "create_empty_dataarray",
+    "create_zarr_store",
+    "benchmark_zarr_array",
+    "benchmark_access_patterns",
+]
 
 
 def main() -> None:

@@ -8,11 +8,13 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "arro3-core>=0.5.1",
     "dask>=2025.5.1",
     "hdf5plugin>=5.1.0",
     "numcodecs>=0.16.1",
     "obstore>=0.6.0",
     "pint>=0.24.4",
+    "pyarrow>=20.0.0",
     "rich>=14.0.0",
     "s3fs>=0.4.2",
     "xarray>=2025.6.1",
