@@ -1,98 +1,56 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
-name = "datacube-practices"
-dynamic = ["version"]
-description = 'Identify common datacube production and usage issues'
+name = "datacube-guide"
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
-license = "MIT"
-keywords = []
-authors = [
-  { name = "Max Jones", email = "14077947+maxrjones@users.noreply.github.com" },
-]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-    "xarray",
-    "numpy>=2.0.0",
-    "universal-pathlib",
-    "numcodecs",
-    "ujson",
-    "packaging",
-    "zarr",
-    "obstore>=0.5.1",
-    "dask",
-]
+requires-python = ">=3.13"
+dependencies = ["datacube-benchmark"]
 
-[project.urls]
-Documentation = "https://github.com/pangeo-data/datacube-worst-practices#readme"
-Issues = "https://github.com/pangeo-data/datacube-worst-practices/issues"
-Source = "https://github.com/pangeo-data/datacube-worst-practices"
+[tool.uv.sources]
+datacube_benchmark = { workspace = true }
 
-[tool.hatch.version]
-path = "src/datacube_practices/_version.py"
+[tool.uv.workspace]
+members = ["packages/*"]
 
-[tool.hatch.envs.docs]
-extra-dependencies = [
-  "ipykernel",
-  "pooch",
-  "bokeh",
-  "graphviz",
-  "Jinja2",
-  "matplotlib",
+[tool.numpydoc_validation]
+# See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
+checks = [
+    "GL06",
+    "GL07",
+    # Currently broken; see https://github.com/numpy/numpydoc/issues/573
+    # "GL09",
+    "GL10",
+    "SS02",
+    "SS04",
+    "PR02",
+    "PR03",
+    "PR05",
+    "PR06",
 ]
 
-[tool.hatch.envs.types]
-extra-dependencies = [
-  "mypy>=1.0.0",
-]
-[tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/datacube_practices tests}"
-
-[tool.hatch.envs.test]
-skip-install = false
-dependencies = [
-    "codecov",
-    "mypy",
-    "pandas-stubs",
-    "pooch",
-    "pre-commit",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "pytest-mypy",
-    "pytest-xdist",
-    "ruff",
-]
-
-[tool.hatch.envs.test.scripts]
-run-coverage = "pytest --cov-config=pyproject.toml --cov=pkg --cov-report xml --cov=src --junitxml=junit.xml -o junit_family=legacy"
-run-coverage-html = "pytest --cov-config=pyproject.toml --cov=pkg --cov-report html --cov=src"
-run-pytest = "run-coverage --no-cov"
-run-verbose = "run-coverage --verbose"
-run-mypy = "mypy src"
-list-env = "pip list"
-
-[tool.coverage.run]
-source_pkgs = ["datacube_practices", "tests"]
-branch = true
-parallel = true
-omit = [
-  "src/datacube_practices/_version.py",
+[tool.uv]
+dev-dependencies = [
+    "aiohttp-retry>=2.9.1",
+    "aiohttp>=3.11.13",
+    "azure-identity>=1.21.0",
+    "boto3>=1.38.21",
+    "fsspec>=2024.10.0",
+    "ipykernel>=6.29.5",
+    "mike>=2.1.3",
+    "mkdocs-material[imaging]>=9.6.3",
+    "mkdocs-redirects>=1.2.2",
+    "mkdocs>=1.6.1",
+    "mkdocstrings-python>=1.13.0",
+    "mkdocstrings>=0.27.0",
+    "markdown-exec[ansi]",
+    "moto[s3,server]>=5.1.1",
+    "mypy>=1.15.0",
+    "pip>=24.2",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mypy-plugins>=3.2.0",
+    "pytest>=8.3.3",
+    "ruff>=0.12.0",
 ]
 
-[tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+[tool.mypy]
+files = ["packages/datacube-benchmark/src/datacube_benchmark"]
