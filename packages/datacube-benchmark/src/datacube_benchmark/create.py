@@ -77,10 +77,11 @@ def create_zarr_store(
         The data type of the [xarray.DataArray][], default is np.dtype("float32").
     fill_method
         The method to use for filling the Zarr array. Options are:
-        - "random": Fill with random values.
-        - "zeros": Fill with zeros.
-        - "ones": Fill with ones.
-        - "arange": Fill with a range of values.
+
+        - `"random"`: Fill with random values.
+        - `"zeros"`: Fill with zeros.
+        - `"ones"`: Fill with ones.
+        - `"arange"`: Fill with a range of values.
 
     Returns
     -------
@@ -127,10 +128,11 @@ def fill_zarr_array(
         The Zarr array to fill.
     method
         The method to use for filling the array. Options are:
-        - "random": Fill with random values.
-        - "zeros": Fill with zeros.
-        - "ones": Fill with ones.
-        - "arange": Fill with a range of values.
+
+        - `"random"`: Fill with random values.
+        - `"zeros"`: Fill with zeros.
+        - `"ones"`: Fill with ones.
+        - `"arange"`: Fill with a range of values.
 
     Returns
     -------
