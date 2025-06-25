@@ -4,7 +4,7 @@ STATUS: Work in progress.
 
 ## Installation
 
-```console
+```bash
 git clone https://github.com/pangeo-data/datacube-guide.git
 cd datacube-guide
 # Serve the documentation
