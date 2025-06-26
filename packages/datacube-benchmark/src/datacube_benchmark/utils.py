@@ -28,7 +28,7 @@ def validate_object_store_contains_zarr(object_store: obs.store.ObjectStore) -> 
 
 def array_storage_size(array: Array) -> int:
     """
-    Validate that all keys in the object store match the Zarr structure.
+    Calculate the total storage size of a Zarr array by summing the sizes of its chunks.
     """
     chunk_pattern = r"^.*/c/\d+(?:/\d+)*$"
     stream = array.store.store.list(return_arrow=True, prefix=array.path)  # type: ignore[attr-defined]

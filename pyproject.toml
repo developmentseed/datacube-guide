@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["datacube-benchmark"]
+dependencies = [
+    "datacube-benchmark",
+    "hvplot>=0.11.3",
+    "matplotlib>=3.10.3",
+]
 
 [tool.uv.sources]
 datacube_benchmark = { workspace = true }

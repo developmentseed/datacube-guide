@@ -1,5 +1,8 @@
 # API Documentation
 
+::: datacube_benchmark.utils.create_empty_dataarray
+
+
 ::: datacube_benchmark.create_empty_dataarray
 
 ::: datacube_benchmark.create_zarr_store

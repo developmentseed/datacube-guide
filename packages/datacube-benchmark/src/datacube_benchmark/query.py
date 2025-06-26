@@ -133,11 +133,13 @@ def benchmark_zarr_array(
         ),  # Handle case where shards might not exist
         "array_dtype": zarr_array.dtype,
         "array_size_memory": Quantity(zarr_array.nbytes, "bytes").to("GB"),
-        "array_size_store": Quantity(array_storage_size(zarr_array), "bytes").to("GB"),
+        "array_size_storage": Quantity(array_storage_size(zarr_array), "bytes").to(
+            "GB"
+        ),
         "array_compressors": zarr_array.compressors,
     }
     stats["compression_ratio"] = (
-        f"{(stats["array_size_memory"] / stats["array_size_store"]).magnitude:.2f}:1"  # type: ignore[operator]
+        f'{(stats["array_size_memory"] / stats["array_size_store"]).magnitude:.2f}:1'  # type: ignore[operator]
     )
     stats["zarr_concurrency"] = zarr.config.get("async.concurrency")
 
