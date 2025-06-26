@@ -1,4 +1,4 @@
-# Datacube worst practices
+# About
 
 The datacube worst practices guidebook is intended as an open, community-maintained resource that communicates what *not to do* when building and using multi-dimensional data products.
 
@@ -10,7 +10,7 @@ The datacube worst practices guidebook is intended as an open, community-maintai
 
     ---
 
-    [:octicons-arrow-right-24: Tiny data chunks](#)
+    [:octicons-arrow-right-24: Tiny data chunks](tiny-chunks)
 
 -   __Massive data chunks__
 

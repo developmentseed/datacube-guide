@@ -1,7 +1,6 @@
 # API Documentation
 
-::: datacube_benchmark.utils.create_empty_dataarray
-
+::: datacube_benchmark.utils.array_storage_size
 
 ::: datacube_benchmark.create_empty_dataarray
 

@@ -12,6 +12,8 @@ extra:
 
 nav:
   - "index.md"
+  - Datacube Worst Practices:
+    - Tiny data chunks: "tiny-chunks.ipynb"
   - Reference:
     - "datacube-benchmark/api.md"
 watch:
@@ -69,6 +71,7 @@ plugins:
   - search
   - autorefs
   - markdown-exec
+  - mkdocs-jupyter
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -95,6 +98,7 @@ plugins:
             - https://developmentseed.org/obstore/latest/objects.inv
             - https://pint.readthedocs.io/en/stable/objects.inv
             - https://pandas.pydata.org/docs/objects.inv
+
 
 markdown_extensions:
   - admonition
