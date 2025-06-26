@@ -11,7 +11,7 @@ from pint import Quantity
 def _measure_zarr_random_access_performance(
     zarr_array: zarr.Array,
     access_pattern: Literal["point", "time_series", "spatial_slice", "full"] = "point",
-    num_samples: int = 100,
+    num_samples: int = 10,
     warmup_samples: int = 10,
 ) -> List[float]:
     """
@@ -87,7 +87,8 @@ def _measure_zarr_random_access_performance(
 def benchmark_zarr_array(
     zarr_array: zarr.Array,
     access_pattern: Literal["point", "time_series", "spatial_slice", "full"] = "point",
-    num_samples: int = 100,
+    num_samples: int = 10,
+    warmup_samples: int = 10,
 ) -> dict:
     """
     Comprehensive benchmark of zarr array random access performance.
@@ -102,6 +103,8 @@ def benchmark_zarr_array(
         Type of access pattern: "point", "time_series", "spatial_slice", "full"
     num_samples
         Number of random access operations to perform
+    warmup_samples
+        Number of warmup operations (not included in timing)
 
     Returns
     -------
@@ -111,7 +114,7 @@ def benchmark_zarr_array(
     """
 
     times = _measure_zarr_random_access_performance(
-        zarr_array, access_pattern, num_samples
+        zarr_array, access_pattern, num_samples, warmup_samples
     )
 
     stats = {
@@ -148,7 +151,7 @@ def benchmark_zarr_array(
 
 # Convenience function to benchmark all access patterns
 def benchmark_access_patterns(
-    zarr_array: zarr.Array, num_samples: int = 100
+    zarr_array: zarr.Array, num_samples: int = 10, warmup_samples: int = 10
 ) -> pd.DataFrame:
     """
     Benchmark all three access patterns and return combined results.
@@ -159,6 +162,8 @@ def benchmark_access_patterns(
         The zarr array to benchmark
     num_samples
         Number of random access operations to perform for each pattern
+    warmup_samples
+        Number of warmup operations (not included in timing)
 
     Returns
     -------
@@ -174,6 +179,7 @@ def benchmark_access_patterns(
             zarr_array,
             access_pattern=pattern,  # type: ignore[arg-type]
             num_samples=num_samples,
+            warmup_samples=warmup_samples,
         )
     return pd.DataFrame.from_dict(results, orient="index")
 

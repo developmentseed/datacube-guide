@@ -1,6 +1,6 @@
 from __future__ import annotations
 import warnings
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Any
 from dask import array as da
 import numpy as np
 import xarray as xr
@@ -14,6 +14,7 @@ from .defaults import (
 )
 from .chunks import calculate_thickness, find_chunk_shape
 from .utils import validate_object_store_contains_zarr
+from .config import Config
 import obstore as obs
 import zarr
 
@@ -288,3 +289,27 @@ def create_empty_dataarray(
             "name": default_data_name,
         }
     )
+
+
+def create_or_open_zarr_array(
+    url: str, *, target_chunk_size: str, config: Config
+) -> zarr.Array:
+    """
+    Either create or open a zarr array with the specified target chunk size
+    """
+    obstore_kwargs: dict[str, Any] = (
+        {"credential_provider": config.credential_provider}
+        if config.credential_provider
+        else {}
+    )
+    object_store = obs.store.from_url(url, **obstore_kwargs)
+    if config.create_data:
+        zarr_store = create_zarr_store(
+            object_store,
+            compressor=config.compressor,
+            target_chunk_size=target_chunk_size,
+            target_array_size=config.target_array_size,
+        )
+    else:
+        zarr_store = zarr.storage.ObjectStore(object_store, read_only=True)
+    return zarr.open_array(zarr_store, zarr_version=3, path=config.data_var)
