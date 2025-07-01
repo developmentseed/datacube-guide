@@ -1,6 +1,6 @@
 # Guidance for avoiding common pitfalls when producing and using datacubes.
 
-STATUS: Work in progress.
+Status: This is a first draft of the guidance.
 
 ## Installation
 
