@@ -1,8 +1,8 @@
 # Based on https://github.com/developmentseed/obspec/blob/main/mkdocs.yml
 site_name: Datacube Guide
-repo_name: pangeo-data/datacube-guide
-repo_url: https://github.com/pangeo-data/datacube-guide
-site_author: Pangeo
+repo_name: datacube-guide
+repo_url: https://github.com/developmentseed/datacube-guide
+site_author: Max Jones
 docs_dir: docs
 
 extra:
