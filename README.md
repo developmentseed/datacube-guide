@@ -8,7 +8,7 @@ STATUS: Work in progress.
 git clone https://github.com/pangeo-data/datacube-guide.git
 cd datacube-guide
 # Serve the documentation
-uv run --mkdocs serve
+uv run -- mkdocs serve
 # Try out the `datacube_benchmark` library in Python
 uv run python
 # Try out the `datacube_benchmark` library in JupyterLab

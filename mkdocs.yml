@@ -13,7 +13,22 @@ extra:
 nav:
   - "index.md"
   - Datacube Worst Practices:
-    - Tiny data chunks: "tiny-chunks.ipynb"
+    - Common production gotchas:
+      - Tiny data chunks: "tiny-chunks.ipynb"
+      - Massive data chunks: "massive-chunks.ipynb"
+      - Tiny coordinate chunks: "tiny-coordinate-chunks.ipynb"
+      - Dispersed metadata: "dispersed-metadata.ipynb"
+      - Non-standardized metadata: "non-standardized-metadata.ipynb"
+      - Bloated datatypes: "bloated-datatypes.ipynb"
+      - Bloated datatypes: "bloated-datatypes.ipynb"
+    - Common usage gotchas:
+      - Default Xarray combine arguments: "xarray-combine-defaults.md"
+      - Default FSSpec caching arguments: "fsspec-caching-defaults.md"
+      - Default GDAL config: "gdal-defaults.md"
+      - Using old libraries: "old-libraries.md"
+
+
+
   - Reference:
     - "datacube-benchmark/api.md"
 watch:
@@ -130,5 +145,5 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tilde
-  - toc:
-      permalink: true
+  # - toc:
+  #     permalink: true

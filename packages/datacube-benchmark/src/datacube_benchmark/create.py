@@ -1,6 +1,6 @@
 from __future__ import annotations
 import warnings
-from typing import TYPE_CHECKING, Literal, Any
+from typing import TYPE_CHECKING, Literal, Any, Hashable
 from dask import array as da
 import numpy as np
 import xarray as xr
@@ -31,15 +31,24 @@ def _write_using_obstore(
     ds: xr.Dataset,
     object_store: obs.store.ObjectStore,
     compressor: Codec | BytesBytesCodec | None = None,
+    chunked_coords: bool = False,
+    consolidated_metadata: bool = True,
 ) -> zarr.storage.ObjectStore:
     zarr_store = zarr.storage.ObjectStore(
         store=object_store,
         read_only=False,
     )
+    encoding: dict[Hashable, Any] = {
+        var: {"compressors": compressor} for var in ds.data_vars
+    }
+    if chunked_coords:
+        for coord in ds.coords:
+            encoding[coord] = {"chunks": 1}
     ds.to_zarr(
         store=zarr_store,
         mode="w",
-        encoding={var: {"compressors": compressor} for var in ds.data_vars},
+        encoding=encoding,
+        consolidated=consolidated_metadata,
     )  # type: ignore[call-overload]
     return zarr_store
 
@@ -53,6 +62,8 @@ def create_zarr_store(
     compressor: Codec | BytesBytesCodec | None = None,
     dtype: np.dtype = np.dtype("float32"),
     fill_method: Literal["random", "zeros", "ones", "arange"] = "arange",
+    chunked_coords: bool = False,
+    consolidated_metadata: bool = True,
 ) -> zarr.storage.ObjectStore:
     """
     Create a Zarr store in the specified object store with an empty dataset.
@@ -83,6 +94,10 @@ def create_zarr_store(
         - `"zeros"`: Fill with zeros.
         - `"ones"`: Fill with ones.
         - `"arange"`: Fill with a range of values.
+    chunked_coords
+        Whether coords are chunked or not. Chunk size would be (1,).
+    consolidated_metadata
+        Whether to consolidate the Zarr metadata.
 
     Returns
     -------
@@ -111,6 +126,8 @@ def create_zarr_store(
         ds=ds,
         object_store=object_store,
         compressor=compressor,
+        chunked_coords=chunked_coords,
+        consolidated_metadata=consolidated_metadata,
     )
     arr = zarr.open_array(store=zarr_store, zarr_version=3, path="data")
     fill_zarr_array(arr=arr, method=fill_method)
@@ -291,9 +308,14 @@ def create_empty_dataarray(
     )
 
 
-def create_or_open_zarr_array(
-    url: str, *, target_chunk_size: str, config: Config
-) -> zarr.Array:
+def create_or_open_zarr_store(
+    url: str,
+    *,
+    target_chunk_size: str,
+    config: Config,
+    chunked_coords: bool = False,
+    consolidated_metadata: bool = True,
+) -> zarr.abc.store.Store:
     """
     Either create or open a zarr array with the specified target chunk size
     """
@@ -309,7 +331,24 @@ def create_or_open_zarr_array(
             compressor=config.compressor,
             target_chunk_size=target_chunk_size,
             target_array_size=config.target_array_size,
+            chunked_coords=chunked_coords,
+            consolidated_metadata=consolidated_metadata,
         )
     else:
         zarr_store = zarr.storage.ObjectStore(object_store, read_only=True)
+    return zarr_store
+
+
+def create_or_open_zarr_array(
+    url: str, *, target_chunk_size: str, config: Config
+) -> zarr.Array:
+    """
+    Either create or open a zarr array with the specified target chunk size
+    """
+    zarr_store = create_or_open_zarr_store(
+        url,
+        target_chunk_size=target_chunk_size,
+        config=config,
+    )
+
     return zarr.open_array(zarr_store, zarr_version=3, path=config.data_var)

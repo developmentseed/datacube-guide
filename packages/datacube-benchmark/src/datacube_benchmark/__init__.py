@@ -1,7 +1,13 @@
-from .create import create_empty_dataarray, create_zarr_store, create_or_open_zarr_array
+from .create import (
+    create_empty_dataarray,
+    create_zarr_store,
+    create_or_open_zarr_array,
+    create_or_open_zarr_store,
+)
 from .create import Quantity
 from .config import Config
 from .query import benchmark_zarr_array, benchmark_access_patterns
+from .open import benchmark_dataset_open
 import numpy as np
 
 __all__ = [
@@ -9,8 +15,10 @@ __all__ = [
     "create_empty_dataarray",
     "create_zarr_store",
     "create_or_open_zarr_array",
+    "create_or_open_zarr_store",
     "benchmark_zarr_array",
     "benchmark_access_patterns",
+    "benchmark_dataset_open",
 ]
 
 
