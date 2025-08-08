@@ -15,11 +15,12 @@ import pandas as pd
 def benchmark_titiler_cmr(
     endpoint: str ="https://staging.openveda.cloud/api/titiler-cmr",
     concept_id: str,
-    *,
     min_zoom: int = 0,
     max_zoom: int = 20,
     tile_scale: int = 3,
     resampling: Resampling = "bilinear",
+    start_date: datetime = datetime(2023, 2, 24, 0, 0, 1),
+    end_date: datetime = datetime(2023, 2, 25, 0, 0, 1),
     colormap_name: Colormap = "gnbu",
     lng: float = -92.1,
     lat: float = 46.8,
@@ -28,6 +29,9 @@ def benchmark_titiler_cmr(
 
     # test concept_id
     concept_id = "C2021957295-LPCLOUD"
+
+    datetime_range = f"{start_date.isoformat()}/{end_date.isoformat()}"
+
 
     # loop over all zoom levels...
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -100,16 +104,16 @@ async def fetch_tile(
     z: int,
     x: int,
     y: int,
-    collection_config: CollectionConfig,
-    interval_days: int,
+    concept_id: str,
+    datetime_range: str,
+    assets: List[str],
+    resampling: Resampling,
+    colormap_name: Colormap,
+    rescale: None | tuple[int, int],
     n_bands: int,
 ) -> httpx.Response:
-    """Fetch a single HLS tile"""
+    """Fetch a single tile and return the httpx.response object."""
     url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
-
-    start_date = collection_config.base_date
-    end_date = start_date + timedelta(days=interval_days)
-    datetime_range = f"{start_date.isoformat()}/{end_date.isoformat()}"
 
     params: Dict[str, Any] = {
         "concept_id": collection_config.concept_id,
@@ -132,39 +136,3 @@ async def fetch_tile(
         mock_response.elapsed = datetime.now() - start_time
         return mock_response
 
-
-from titiler.cmr.backend import CMRBackend
-from titiler.cmr.reader import MultiFilesBandsReader
-
-# titiler_endpoint = "http://localhost:8081"  # docker network endpoint
-titiler_endpoint = "https://staging.openveda.cloud/api/titiler-cmr"  # deployed endpoint
-
-datasets = earthaccess.search_datasets(keyword="HLSL30")
-ds = datasets[0]
-
-concept_id = ds["meta"]["concept-id"]
-print("Concept-Id: ", concept_id)
-print("Abstract: ", ds["umm"]["Abstract"])
-
-
-import earthaccess
-import morecantile
-
-tms = morecantile.tms.get("WebMercatorQuad")
-
-bounds = tms.bounds(62, 44, 7)
-xmin, ymin, xmax, ymax = (round(n, 8) for n in bounds)
-concept_id = "C2021957295-LPCLOUD"
-
-results = earthaccess.search_data(
-    bounding_box=(xmin, ymin, xmax, ymax),
-    count=1,
-    concept_id=concept_id,
-    temporal=("2024-02-11", "2024-02-13"),
-)
-print("Granules:")
-print(results)
-print()
-print("Example of COGs URL: ")
-for link in results[0].data_links(access="direct"):
-    print(link)
