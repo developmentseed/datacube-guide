@@ -9,9 +9,10 @@ import morecantile
 import pytest
 import pandas as pd
 
+tms = morecantile.tms.get("WebMercatorQuad")
+
+
 # -- benchmark a viewport:
-
-
 def benchmark_titiler_cmr(
     endpoint: str ="https://staging.openveda.cloud/api/titiler-cmr",
     concept_id: str,
@@ -136,3 +137,26 @@ async def fetch_tile(
         mock_response.elapsed = datetime.now() - start_time
         return mock_response
 
+if __name__ == "__main__":
+    async def main():
+        print("Starting benchmark with RGB assets...")
+        df_rgb = await benchmark_titiler_cmr(
+            concept_id="C2021957295-LPCLOUD",  # HLS L30
+            base_date=datetime(2024, 5, 1),
+            interval_days=30,
+            assets=["B04", "B03", "B02"],  # e.g., RGB
+            min_zoom=8,
+            max_zoom=10,
+        )
+
+        pd.set_option("display.max_rows", None)   
+        pd.set_option("display.max_columns", None)
+        pd.set_option("display.width", None) 
+        pd.set_option("display.max_colwidth", None)
+        print("Benchmark finished.")
+        print(df_rgb)
+        print("\nRGB Benchmark Summary:")
+        print(df_rgb.groupby('zoom')['response_time_sec'].describe())
+
+
+    asyncio.run(main())
