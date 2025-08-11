@@ -1,23 +1,22 @@
-"""Benchmarking utility for Titiler-cmr"""
+"""
+Benchmarking utility for Titiler-cmr
+"""
 
 import asyncio
+import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Tuple
 
 import httpx
 import morecantile
 import pandas as pd
-import time
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
 
-
 # ------------------------------
 # Helpers
 # ------------------------------
-
-
 def get_surrounding_tiles(
     x: int, y: int, zoom: int, width: int = TILES_WIDTH, height: int = TILES_HEIGHT
 ) -> List[Tuple[int, int]]:
@@ -25,14 +24,16 @@ def get_surrounding_tiles(
     Get a list of surrounding tile coordinates for a viewport around a central tile at (x,y).
     From https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
 
-    Args:
+     Parameters
+    ----------
         x (int): The x-coordinate of the central tile.
         y (int): The y-coordinate of the central tile.
         zoom (int): The zoom level.
         width (int, optional): The width of the viewport in tiles. Defaults to TILES_WIDTH.
         height (int, optional): The height of the viewport in tiles. Defaults to TILES_HEIGHT.
 
-    Returns:
+    Returns
+    -------
         List[Tuple[int, int]]: A list of (x, y) coordinates for the surrounding tiles.
     """
 
@@ -72,7 +73,8 @@ async def fetch_tile(
     """
     Fetch a single tile and return the httpx.response object.
 
-    Args:
+    Parameters
+    ----------
         client (httpx.AsyncClient): The HTTP client to use for requests.
         endpoint (str): The API endpoint URL.
         format (str): The image format to request.
@@ -86,7 +88,8 @@ async def fetch_tile(
         colormap_name (Colormap): The colormap to use for the request.
         rescale (None | tuple[int, int]): The rescale parameters to use for the request.
 
-    Returns:
+    Returns
+    -------
         httpx.Response: The HTTP response object.
     """
 
@@ -110,7 +113,7 @@ async def fetch_tile(
     try:
         response = await client.get(url, params=params, timeout=30.0)
         response.raise_for_status()
-        response.elapsed = (time.perf_counter() - start_time)
+        response.elapsed = time.perf_counter() - start_time
         return response
     except Exception:
         # Create a mock response for exceptions
@@ -118,8 +121,9 @@ async def fetch_tile(
         mock_response.elapsed = time.perf_counter() - start_time
         return mock_response
 
-
-# -- benchmark a viewport:
+# ---------------------------------------------------------------------
+# Benchmark Function
+# ---------------------------------------------------------------------
 async def benchmark_titiler_cmr(
     concept_id: str,
     endpoint: str = "https://staging.openveda.cloud/api/titiler-cmr",
@@ -194,12 +198,13 @@ async def benchmark_titiler_cmr(
 if __name__ == "__main__":
 
     async def main():
-        print("Starting benchmark with RGB assets...")
+        print("Starting benchmark with assets...")
         projection = "WebMercatorQuad"
         tms = morecantile.tms.get(projection)
+        concept_id = "C2021957295-LPCLOUD"  # HLS L30
 
         df_rgb = await benchmark_titiler_cmr(
-            concept_id="C2021957295-LPCLOUD",  # HLS L30
+            concept_id=concept_id,
             start_date=datetime(2024, 5, 1),
             end_date=datetime(2024, 5, 2),
             assets=["B04", "B03", "B02"],  # e.g., RGB
