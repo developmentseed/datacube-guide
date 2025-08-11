@@ -13,6 +13,51 @@ TILES_WIDTH = 5
 TILES_HEIGHT = 5
 
 
+
+# ------------------------------
+# Helpers
+# ------------------------------
+
+def get_surrounding_tiles(
+    x: int,
+    y: int,
+    zoom: int,
+    width: int = TILES_WIDTH,
+    height: int = TILES_HEIGHT
+    ) -> List[Tuple[int, int]]:
+    """
+    Get a list of surrounding tile coordinates for a viewport around a central tile at (x,y).
+    From https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
+
+    Args:
+        x (int): The x-coordinate of the central tile.
+        y (int): The y-coordinate of the central tile.
+        zoom (int): The zoom level.
+        width (int, optional): The width of the viewport in tiles. Defaults to TILES_WIDTH.
+        height (int, optional): The height of the viewport in tiles. Defaults to TILES_HEIGHT.
+
+    Returns:
+        List[Tuple[int, int]]: A list of (x, y) coordinates for the surrounding tiles.
+    """
+
+    tiles: List[Tuple[int, int]] = []
+
+    # tiles = []
+    offset_x = width // 2
+    offset_y = height // 2
+    max_tile = 2**zoom - 1
+
+    for y_pos in range(y - offset_y, y + offset_y + 1):
+        for x_pos in range(x - offset_x, x + offset_x + 1):
+            # Ensure x, y are valid for the zoom level
+
+            x_valid = max(0, min(x_pos, max_tile))
+            y_valid = max(0, min(y_pos, max_tile))
+            tiles.append((x_valid, y_valid))
+
+    return tiles
+
+
 # -- benchmark a viewport:
 async def benchmark_titiler_cmr(
     concept_id: str,
@@ -84,32 +129,6 @@ async def benchmark_titiler_cmr(
     return pd.DataFrame(results)
 
 
-# -- this could all go to titiler-utils
-def get_surrounding_tiles(
-    x: int, y: int, zoom: int, width: int = TILES_WIDTH, height: int = TILES_HEIGHT
-) -> List[Tuple[int, int]]:
-    """
-    Get a list of surrounding tile coordinates for a viewport.
-    From https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
-    """
-
-    tiles: List[Tuple[int, int]] = []
-
-    # tiles = []
-    offset_x = width // 2
-    offset_y = height // 2
-
-    max_tile = 2**zoom - 1
-
-    for y_pos in range(y - offset_y, y + offset_y + 1):
-        for x_pos in range(x - offset_x, x + offset_x + 1):
-            # Ensure x, y are valid for the zoom level
-
-            x_valid = max(0, min(x_pos, max_tile))
-            y_valid = max(0, min(y_pos, max_tile))
-            tiles.append((x_valid, y_valid))
-
-    return tiles
 
 
 async def fetch_tile(
