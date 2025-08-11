@@ -12,24 +12,24 @@ import pandas as pd
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
 
+
 # -- benchmark a viewport:
 async def benchmark_titiler_cmr(
-    endpoint: str ="https://staging.openveda.cloud/api/titiler-cmr",
     concept_id: str,
-    *, 
+    endpoint: str = "https://staging.openveda.cloud/api/titiler-cmr",
+    *,
     tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
-    min_zoom: int = 0,
-    max_zoom: int = 20,
+    min_zoom: int = 7,
+    max_zoom: int = 10,
     tile_scale: int = 3,
-    resampling: Resampling = "bilinear",
+    resampling: str = "nearest",
+    colormap_name: Colormap = "gnbu",
     start_date: datetime = datetime(2023, 2, 24, 0, 0, 1),
     end_date: datetime = datetime(2023, 2, 25, 0, 0, 1),
-    colormap_name: Colormap = "gnbu",
     lng: float = -92.1,
     lat: float = 46.8,
     rescale: None | tuple[int, int] = None,
 ) -> pd.DataFrame:
-    
     """
     Benchmarks the Titiler-cmr API for a specific viewport across multiple zoom levels.
 
@@ -46,11 +46,9 @@ async def benchmark_titiler_cmr(
         for zoom in range(min_zoom, max_zoom + 1):
             print(f"Benchmarking Zoom level: {zoom}...")
             center_tile = tms.tile(lng=lng, lat=lat, zoom=zoom)
-            tiles_to_fetch = get_surrounding_tiles(center_tile.x,
-                                                   center_tile.y,
-                                                   zoom)
+            tiles_to_fetch = get_surrounding_tiles(center_tile.x, center_tile.y, zoom)
 
-            # all tasks to fetch tiles 
+            # all tasks to fetch tiles
             tasks = [
                 fetch_tile(
                     client=client,
@@ -68,7 +66,7 @@ async def benchmark_titiler_cmr(
                 for x, y in tiles_to_fetch
             ]
             responses = await asyncio.gather(*tasks)
-            
+
             for (x, y), response in zip(tiles_to_fetch, responses):
                 results.append(
                     {
@@ -97,7 +95,7 @@ def get_surrounding_tiles(
 
     tiles: List[Tuple[int, int]] = []
 
-    #tiles = []
+    # tiles = []
     offset_x = width // 2
     offset_y = height // 2
 
@@ -106,7 +104,7 @@ def get_surrounding_tiles(
     for y_pos in range(y - offset_y, y + offset_y + 1):
         for x_pos in range(x - offset_x, x + offset_x + 1):
             # Ensure x, y are valid for the zoom level
-            
+
             x_valid = max(0, min(x_pos, max_tile))
             y_valid = max(0, min(y_pos, max_tile))
             tiles.append((x_valid, y_valid))
@@ -126,11 +124,11 @@ async def fetch_tile(
     resampling: Resampling,
     colormap_name: Colormap,
     rescale: None | tuple[int, int],
-    ) -> httpx.Response:
+) -> httpx.Response:
     """
     Fetch a single tile and return the httpx.response object."""
 
-    #url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
+    # url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
     url = f"{endpoint}/tiles/{z}/{x}/{y}.png"
 
     params: Dict[str, Any] = {
@@ -160,7 +158,9 @@ async def fetch_tile(
         mock_response.elapsed = datetime.now() - start_time
         return mock_response
 
+
 if __name__ == "__main__":
+
     async def main():
         print("Starting benchmark with RGB assets...")
         projection = "WebMercatorQuad"
@@ -176,14 +176,13 @@ if __name__ == "__main__":
             max_zoom=10,
         )
 
-        pd.set_option("display.max_rows", None)   
+        pd.set_option("display.max_rows", None)
         pd.set_option("display.max_columns", None)
-        pd.set_option("display.width", None) 
+        pd.set_option("display.width", None)
         pd.set_option("display.max_colwidth", None)
         print("Benchmark finished.")
         print(df_rgb)
         print("\nRGB Benchmark Summary:")
-        print(df_rgb.groupby('zoom')['response_time_sec'].describe())
-
+        print(df_rgb.groupby("zoom")["response_time_sec"].describe())
 
     asyncio.run(main())
