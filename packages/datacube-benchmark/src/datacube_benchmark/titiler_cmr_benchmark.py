@@ -6,16 +6,18 @@ from typing import Any, Dict, List, NamedTuple, Tuple
 
 import httpx
 import morecantile
-import pytest
 import pandas as pd
 
-tms = morecantile.tms.get("WebMercatorQuad")
 
+TILES_WIDTH = 3
+TILES_HEIGHT = 3
 
 # -- benchmark a viewport:
-def benchmark_titiler_cmr(
+async def benchmark_titiler_cmr(
     endpoint: str ="https://staging.openveda.cloud/api/titiler-cmr",
     concept_id: str,
+    *, 
+    tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
     min_zoom: int = 0,
     max_zoom: int = 20,
     tile_scale: int = 3,
@@ -27,39 +29,47 @@ def benchmark_titiler_cmr(
     lat: float = 46.8,
     rescale: None | tuple[int, int] = None,
 ) -> pd.DataFrame:
+    
+    """
+    Benchmarks the titiler-cmr API for a specific viewport across multiple zoom levels.
 
-    # test concept_id
-    concept_id = "C2021957295-LPCLOUD"
+    Returns:
+        pd.DataFrame: A DataFrame containing the benchmark results.
+    """
 
     datetime_range = f"{start_date.isoformat()}/{end_date.isoformat()}"
 
-
+ 
     # loop over all zoom levels...
+    results = []
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         for zoom in range(min_zoom, max_zoom + 1):
-            print(f"Benchmarking Zoom level: {zoom}")
+            print(f"Benchmarking Zoom level: {zoom}...")
             center_tile = tms.tile(lng=lng, lat=lat, zoom=zoom)
-            tiles_to_fetch = get_surrounding_tiles(center_tile.x, center_tile.y, zoom)
+            tiles_to_fetch = get_surrounding_tiles(center_tile.x,
+                                                   center_tile.y,
+                                                   zoom)
 
-            # Create a list of coroutine tasks
+            # all tasks to fetch tiles 
             tasks = [
                 fetch_tile(
-                    client,
-                    endpoint,
-                    zoom,
-                    x,
-                    y,
-                    concept_id,
-                    datetime_range,
-                    assets,
-                    resampling,
-                    colormap_name,
+                    client=client,
+                    endpoint=endpoint,
+                    zoom=zoom,
+                    x=x,
+                    y=y,
+                    concept_id=concept_id,
+                    datetime_range=datetime_range,
+                    assets=assets,
+                    resampling=resampling,
+                    colormap_name=colormap_name,
                     rescale,
                 )
                 for x, y in tiles_to_fetch
             ]
             responses = await asyncio.gather(*tasks)
-
+            
             for (x, y), response in zip(tiles_to_fetch, responses):
                 results.append(
                     {
@@ -76,17 +86,22 @@ def benchmark_titiler_cmr(
     return pd.DataFrame(results)
 
 
-# -- titiler -utils
+# -- this could all go to titiler-utils
 def get_surrounding_tiles(
     x: int, y: int, zoom: int, width: int = TILES_WIDTH, height: int = TILES_HEIGHT
 ) -> List[Tuple[int, int]]:
     """
     https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
-    Fetch all tiles for a viewport and return detailed metrics
+    Fetch all tiles for a viewport and return valid tile coords.
     """
-    tiles = []
+
+    tiles: List[Tuple[int, int]] = []
+
+    #tiles = []
     offset_x = width // 2
     offset_y = height // 2
+
+    max_tile = 2**zoom - 1
 
     for y_pos in range(y - offset_y, y + offset_y + 1):
         for x_pos in range(x - offset_x, x + offset_x + 1):
@@ -114,14 +129,22 @@ async def fetch_tile(
     n_bands: int,
 ) -> httpx.Response:
     """Fetch a single tile and return the httpx.response object."""
-    url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
+    #url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
+
+    url = f"{endpoint}/tiles/{z}/{x}/{y}.png"
 
     params: Dict[str, Any] = {
-        "concept_id": collection_config.concept_id,
+        "concept_id": concept_id,
         "datetime": datetime_range,
+        "resampling": resampling,
+        "colormap_name": colormap_name,
     }
 
-    params.update(get_band_params(collection_config, n_bands))
+    # add assets (i.e. bands)
+    if assets:
+        params["assets"] = assets
+    if rescale:
+        params["rescale"] = f"{rescale[0]},{rescale[1]}"
 
     start_time = datetime.now()
     try:
@@ -140,6 +163,9 @@ async def fetch_tile(
 if __name__ == "__main__":
     async def main():
         print("Starting benchmark with RGB assets...")
+        projection = "WebMercatorQuad"
+        tms = morecantile.tms.get(projection)
+
         df_rgb = await benchmark_titiler_cmr(
             concept_id="C2021957295-LPCLOUD",  # HLS L30
             base_date=datetime(2024, 5, 1),
