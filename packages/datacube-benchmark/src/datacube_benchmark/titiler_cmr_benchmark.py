@@ -7,24 +7,20 @@ from typing import Any, Dict, List, NamedTuple, Tuple
 import httpx
 import morecantile
 import pandas as pd
-
+import time
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
-
 
 
 # ------------------------------
 # Helpers
 # ------------------------------
 
+
 def get_surrounding_tiles(
-    x: int,
-    y: int,
-    zoom: int,
-    width: int = TILES_WIDTH,
-    height: int = TILES_HEIGHT
-    ) -> List[Tuple[int, int]]:
+    x: int, y: int, zoom: int, width: int = TILES_WIDTH, height: int = TILES_HEIGHT
+) -> List[Tuple[int, int]]:
     """
     Get a list of surrounding tile coordinates for a viewport around a central tile at (x,y).
     From https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
@@ -58,6 +54,71 @@ def get_surrounding_tiles(
     return tiles
 
 
+async def fetch_tile(
+    client: httpx.AsyncClient,
+    endpoint: str,
+    format="png",
+    *,
+    z: int,
+    x: int,
+    y: int,
+    concept_id: str,
+    datetime_range: str,
+    assets: List[str],
+    resampling: str,
+    colormap_name: str,
+    rescale: None | tuple[int, int],
+) -> httpx.Response:
+    """
+    Fetch a single tile and return the httpx.response object.
+
+    Args:
+        client (httpx.AsyncClient): The HTTP client to use for requests.
+        endpoint (str): The API endpoint URL.
+        format (str): The image format to request.
+        z (int): The zoom level of the tile.
+        x (int): The x-coordinate of the tile.
+        y (int): The y-coordinate of the tile.
+        concept_id (str): The concept ID to use for the request.
+        datetime_range (str): The datetime range to use for the request.
+        assets (List[str]): The list of asset IDs to include in the request.
+        resampling (Resampling): The resampling method to use for the request.
+        colormap_name (Colormap): The colormap to use for the request.
+        rescale (None | tuple[int, int]): The rescale parameters to use for the request.
+
+    Returns:
+        httpx.Response: The HTTP response object.
+    """
+
+    # url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
+    url = f"{endpoint}/tiles/{z}/{x}/{y}.{format}"
+
+    params: Dict[str, Any] = {
+        "concept_id": concept_id,
+        "datetime": datetime_range,
+        "resampling": resampling,
+        "colormap_name": colormap_name,
+    }
+
+    # add assets (i.e. bands)
+    if assets:
+        params["assets"] = assets
+    if rescale:
+        params["rescale"] = f"{rescale[0]},{rescale[1]}"
+
+    start_time = time.perf_counter()
+    try:
+        response = await client.get(url, params=params, timeout=30.0)
+        response.raise_for_status()
+        response.elapsed = (time.perf_counter() - start_time)
+        return response
+    except Exception:
+        # Create a mock response for exceptions
+        mock_response = httpx.Response(500, request=httpx.Request("GET", url))
+        mock_response.elapsed = time.perf_counter() - start_time
+        return mock_response
+
+
 # -- benchmark a viewport:
 async def benchmark_titiler_cmr(
     concept_id: str,
@@ -68,7 +129,8 @@ async def benchmark_titiler_cmr(
     max_zoom: int = 10,
     tile_scale: int = 3,
     resampling: str = "nearest",
-    colormap_name: Colormap = "gnbu",
+    colormap_name: str = "gnbu",
+    assets=[],
     start_date: datetime = datetime(2023, 2, 24, 0, 0, 1),
     end_date: datetime = datetime(2023, 2, 25, 0, 0, 1),
     lng: float = -92.1,
@@ -119,7 +181,7 @@ async def benchmark_titiler_cmr(
                         "x": x,
                         "y": y,
                         "status_code": response.status_code,
-                        "response_time_sec": response.elapsed.total_seconds(),
+                        "response_time_sec": response.elapsed,
                         "response_size_bytes": len(response.content),
                         "is_error": response.is_error,
                         "has_data": response.status_code == 200,  # 204 means no data
@@ -127,55 +189,6 @@ async def benchmark_titiler_cmr(
                 )
 
     return pd.DataFrame(results)
-
-
-
-
-async def fetch_tile(
-    client: httpx.AsyncClient,
-    endpoint: str,
-    z: int,
-    x: int,
-    y: int,
-    concept_id: str,
-    datetime_range: str,
-    assets: List[str],
-    resampling: Resampling,
-    colormap_name: Colormap,
-    rescale: None | tuple[int, int],
-) -> httpx.Response:
-    """
-    Fetch a single tile and return the httpx.response object."""
-
-    # url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
-    url = f"{endpoint}/tiles/{z}/{x}/{y}.png"
-
-    params: Dict[str, Any] = {
-        "concept_id": concept_id,
-        "datetime": datetime_range,
-        "resampling": resampling,
-        "colormap_name": colormap_name,
-    }
-
-    # add assets (i.e. bands)
-    if assets:
-        params["assets"] = assets
-    if rescale:
-        params["rescale"] = f"{rescale[0]},{rescale[1]}"
-
-    start_time = datetime.now()
-    try:
-        response = await client.get(url, params=params, timeout=30.0)
-        response.raise_for_status()
-        elapsed = (datetime.now() - start_time).total_seconds()
-
-        response.elapsed = timedelta(seconds=elapsed)
-        return response
-    except Exception:
-        # Create a mock response for exceptions
-        mock_response = httpx.Response(500, request=httpx.Request("GET", url))
-        mock_response.elapsed = datetime.now() - start_time
-        return mock_response
 
 
 if __name__ == "__main__":
@@ -187,8 +200,8 @@ if __name__ == "__main__":
 
         df_rgb = await benchmark_titiler_cmr(
             concept_id="C2021957295-LPCLOUD",  # HLS L30
-            base_date=datetime(2024, 5, 1),
-            interval_days=30,
+            start_date=datetime(2024, 5, 1),
+            end_date=datetime(2024, 5, 2),
             assets=["B04", "B03", "B02"],  # e.g., RGB
             tms=tms,
             min_zoom=8,
