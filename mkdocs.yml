@@ -25,7 +25,9 @@ nav:
       - Default FSSpec caching arguments: "fsspec-caching-defaults.md"
       - Default GDAL config: "gdal-defaults.md"
       - Using old libraries: "old-libraries.md"
-
+  - Datacube Visualization:
+    - "explanation/visualization.md"
+    - "explanation/titiler-ecosystem.md"
 
 
   - Reference:
