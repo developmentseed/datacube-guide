@@ -363,8 +363,6 @@ async def fetch_tile(
         fmt=format,
         scale=scale,
     )
-    print ("url:", url)
-    print ("url =", f"{endpoint}/tiles/{z}/{x}/{y}.{format}")
     params: dict[str, Any] = {
         "concept_id": concept_id,
         "datetime": datetime_range,
