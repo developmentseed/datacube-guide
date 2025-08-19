@@ -207,11 +207,12 @@ if __name__ == "__main__":
             concept_id=concept_id,
             start_date=datetime(2024, 5, 1),
             end_date=datetime(2024, 5, 2),
-            assets=["B04", "B03", "B02"],  # e.g., RGB
+            assets=["B04", "B03", "B02"],  # e.g., bands    
             tms=tms,
             min_zoom=8,
             max_zoom=10,
         )
+
 
         pd.set_option("display.max_rows", None)
         pd.set_option("display.max_columns", None)
@@ -219,7 +220,5 @@ if __name__ == "__main__":
         pd.set_option("display.max_colwidth", None)
         print("Benchmark finished.")
         print(df_rgb)
-        print("\nRGB Benchmark Summary:")
-        print(df_rgb.groupby("zoom")["response_time_sec"].describe())
 
     asyncio.run(main())
