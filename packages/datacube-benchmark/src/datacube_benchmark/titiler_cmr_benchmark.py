@@ -1,13 +1,15 @@
-
 """
 Benchmarking utility for Titiler-cmr
 """
 
+from __future__ import annotations
+
 import asyncio
-from re import I
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, NamedTuple, Tuple
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, Optional, Sequence, List, Tuple
 
 import httpx
 import morecantile
@@ -15,9 +17,95 @@ import pandas as pd
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
+SUPPORTED_TILE_FORMATS: set[str] = {
+    "png",
+    "npy",
+    "tiff",
+    "jpeg",
+    "jpg",
+    "jp2",
+    "webp",
+    "pngraw",
+}
+
+# ------------------------------
+# Dataclasses
+# ------------------------------
 
 
+@dataclass(frozen=True)
+class DatasetParams:
+    """
+    Dataset-related parameters for requests to TiTiler-CMR.
 
+    Parameters
+    ----------
+    concept_id : str
+        CMR concept ID (e.g., ``"C2021957295-LPCLOUD"``).
+    datetime_start : datetime
+        Beginning of the ISO 8601 time interval (inclusive).
+    datetime_end : datetime
+        End of the ISO 8601 time interval.
+    assets : Sequence[str] or None
+        Optional list of assets/bands/variables to request.
+    resampling : str
+        Resampling method (e.g., ``"nearest"``, ``"bilinear"``).
+    colormap_name : str or None
+        Optional colormap for single-band visualization.
+    rescale : tuple[float, float] or None
+        Optional min/max scaling values for visualization (e.g., ``(0, 3000)``).
+    """
+
+    concept_id: str
+    datetime_start: datetime
+    datetime_end: datetime
+    assets: Optional[Sequence[str]] = None
+    resampling: str = "nearest"
+    colormap_name: Optional[str] = None
+    rescale: Optional[Tuple[float, float]] = None
+
+    def datetime_range(self) -> str:
+        """Return ISO 8601 datetime interval string ``"<start>/<end>"``."""
+        return f"{self.datetime_start.isoformat()}/{self.datetime_end.isoformat()}"
+
+
+@dataclass(frozen=True)
+class TileBenchConfig:
+    """
+    Configuration for tile benchmarking.
+    """
+
+    min_zoom: int = 7
+    max_zoom: int = 10
+    tiles_width: int = 5
+    tiles_height: int = 5
+    image_format: str = "png"
+    lng: float = -92.1
+    lat: float = 46.8
+
+    def validate(self) -> None:
+        """Validate configuration values and raise `ValueError` if invalid."""
+        if self.max_zoom < self.min_zoom:
+            raise ValueError("max_zoom must be >= min_zoom.")
+        if self.tiles_width <= 0 or self.tiles_height <= 0:
+            raise ValueError("Tile window dimensions must be positive.")
+        if self.image_format not in SUPPORTED_TILE_FORMATS:
+            raise ValueError(
+                f"Format must be one of: {', '.join(SUPPORTED_TILE_FORMATS)}."
+            )
+
+
+@dataclass(frozen=True)
+class CompatibilityReport:
+    """
+    Outcome of a quick, heuristic compatibility probe.
+    """
+
+    concept_id: str
+    ok: bool
+    tested_formats: Dict[str, bool]
+    tested_resampling: Dict[str, bool]
+    detected: Dict[str, Any]
 
 
 # ------------------------------
@@ -212,9 +300,8 @@ async def _get_json(
     """
     try:
         resp = await client.get(url, params=params)
-        if (
-            resp.status_code == 200
-            and resp.headers.get("content-type", "").startswith("application/json")
+        if resp.status_code == 200 and resp.headers.get("content-type", "").startswith(
+            "application/json"
         ):
             return resp.json()
     except Exception:
@@ -229,7 +316,7 @@ async def compatibility_test(
     lng: float,
     lat: float,
     zoom: int = 8,
-    formats: Sequence[str] = ("png", "jpeg", "webp"),
+    formats: Sequence[str] = SUPPORTED_TILE_FORMATS,
     resampling_methods: Sequence[str] = ("nearest", "bilinear"),
     info_paths: Sequence[str] = ("info", "metadata", "collection", "capabilities"),
 ) -> CompatibilityReport:
@@ -276,6 +363,14 @@ async def compatibility_test(
     - This function **does not** cache any results; it is intended for
       lightweight probing and should be called once per dataset.
     """
+    fmt_list = [f.lower() for f in formats]
+    unknown = [f for f in fmt_list if f not in SUPPORTED_TILE_FORMATS]
+    if unknown:
+        raise ValueError(
+            f"Unsupported format(s): {unknown}. "
+            f"Supported: {', '.join(SUPPORTED_TILE_FORMATS)}"
+        )
+
     tms = morecantile.tms.get("WebMercatorQuad")
     center = tms.tile(lng=lng, lat=lat, zoom=zoom)
 
@@ -297,8 +392,7 @@ async def compatibility_test(
     tested_resampling: Dict[str, bool] = {}
     detected: Dict[str, Any] = {}
 
-    async with httpx.AsyncClient(
-        limits=limits, timeout=timeout, http2=True) as client:
+    async with httpx.AsyncClient(limits=limits, timeout=timeout, http2=True) as client:
         # Try to glean useful hints from typical metadata/info endpoints.
         for path in info_paths:
             url = f"{endpoint}/{path}"
@@ -322,16 +416,18 @@ async def compatibility_test(
                 break
 
         # Try formats.
-        for fmt in formats:
-            url = f"{common.endpoint}/tiles/{center.z}/{center.x}/{center.y}.{fmt}"
-            resp = await client.get(url, params=params_base | {"resampling": ds.resampling})
-            tested_formats[fmt] = (resp.status_code == 200)
+        for fmt in fmt_list:
+            url = f"{endpoint}/tiles/{center.z}/{center.x}/{center.y}.{fmt}"
+            resp = await client.get(
+                url, params=params_base | {"resampling": ds.resampling}
+            )
+            tested_formats[fmt] = resp.status_code == 200
 
         # Try resampling methods (PNG baseline for comparison).
         for method in resampling_methods:
-            url = f"{common.endpoint}/tiles/{center.z}/{center.x}/{center.y}.png"
+            url = f"{endpoint}/tiles/{center.z}/{center.x}/{center.y}.png"
             resp = await client.get(url, params=params_base | {"resampling": method})
-            tested_resampling[method] = (resp.status_code == 200)
+            tested_resampling[method] = resp.status_code == 200
 
     ok_any = any(tested_formats.values()) and any(tested_resampling.values())
     return CompatibilityReport(
@@ -343,99 +439,146 @@ async def compatibility_test(
     )
 
 
-
 # ---------------------------------------------------------------------
 # Benchmark Function
 # ---------------------------------------------------------------------
 async def benchmark_titiler_cmr(
-    concept_id: str,
-    endpoint: str = "https://staging.openveda.cloud/api/titiler-cmr",
+    endpoint: str,
+    ds: DatasetParams,
     *,
     tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
     min_zoom: int = 7,
     max_zoom: int = 10,
     tile_scale: int = 3,
-    resampling: str = "nearest",
-    colormap_name: str = "gnbu",
-    assets: list[str] = None,
-    start_date: datetime = datetime(2023, 2, 24, 0, 0, 1),
-    end_date: datetime = datetime(2023, 2, 25, 0, 0, 1),
     lng: float = -92.1,
     lat: float = 46.8,
-    rescale: tuple[int, int] | None = None,
+    timeout_s: float = 30.0,
+    format: str = "png",
 ) -> pd.DataFrame:
     """
     Benchmarks the Titiler-cmr API for a specific viewport across multiple zoom levels.
+
+    Parameters
+    ----------
+    endpoint : str
+        The API endpoint URL.
+    ds : DatasetParams
+        The dataset parameters.
+    tms : morecantile.TileMatrixSet
+        The tile matrix set.
+    min_zoom : int
+        The minimum zoom level.
+    max_zoom : int
+        The maximum zoom level.
+    tile_scale : int
+        The tile scale factor.
+    lng : float
+        The longitude of the center point.
+    lat : float
+        The latitude of the center point.
+    timeout_s : float
+        The request timeout in seconds.
+    format : str
+        The image format (same as the SUPPORTED_TILE_FORMATS)
 
     Returns:
         pd.DataFrame: A DataFrame containing the benchmark results.
     """
 
-    datetime_range = f"{start_date.isoformat()}/{end_date.isoformat()}"
-    results = []
-    if assets is None:
-        assets = []
+    results: List[Dict[str, Any]] = []
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
         for zoom in range(min_zoom, max_zoom + 1):
             print(f"Benchmarking Zoom level: {zoom}...")
             center_tile = tms.tile(lng=lng, lat=lat, zoom=zoom)
             tiles_to_fetch = get_surrounding_tiles(center_tile.x, center_tile.y, zoom)
+
             tasks = [
                 fetch_tile(
                     client=client,
                     endpoint=endpoint,
+                    format=format,
                     z=zoom,
                     x=x,
                     y=y,
-                    concept_id=concept_id,
-                    datetime_range=datetime_range,
-                    assets=assets,
-                    resampling=resampling,
-                    colormap_name=colormap_name,
-                    rescale=rescale,
+                    concept_id=ds.concept_id,
+                    datetime_range=ds.datetime_range(),
+                    assets=list(ds.assets) if ds.assets else [],
+                    resampling=ds.resampling,
+                    colormap_name=ds.colormap_name,
+                    rescale=ds.rescale,
                 )
                 for x, y in tiles_to_fetch
             ]
             responses = await asyncio.gather(*tasks)
             for (x, y), response in zip(tiles_to_fetch, responses):
-                results.append({
-                    "zoom": zoom,
-                    "x": x,
-                    "y": y,
-                    "status_code": response.status_code,
-                    "response_time_sec": response.elapsed,
-                    "response_size_bytes": len(response.content),
-                    "is_error": response.is_error,
-                    "has_data": response.status_code == 200,
-                })
+                results.append(
+                    {
+                        "zoom": zoom,
+                        "x": x,
+                        "y": y,
+                        "status_code": response.status_code,
+                        "response_time_sec": response.elapsed,
+                        "response_size_bytes": len(response.content),
+                        "is_error": response.is_error,
+                        "has_data": response.status_code == 200,
+                    }
+                )
     return pd.DataFrame(results)
 
 
 if __name__ == "__main__":
 
     async def main():
-        print("Starting benchmark with assets...")
+        endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
         projection = "WebMercatorQuad"
         tms = morecantile.tms.get(projection)
+
         concept_id = "C2021957295-LPCLOUD"  # HLS L30
 
-        df_rgb = await benchmark_titiler_cmr(
+        ds = DatasetParams(
             concept_id=concept_id,
-            start_date=datetime(2024, 5, 1),
-            end_date=datetime(2024, 5, 2),
-            assets=["B04", "B03", "B02"],  # e.g., bands    
+            datetime_start=datetime(2024, 5, 1),
+            datetime_end=datetime(2024, 5, 2),
+            assets=["B04", "B03", "B02"],
+        )
+
+        compat = await compatibility_test(
+            endpoint=endpoint,
+            ds=ds,
+            lng=-92.1,
+            lat=46.8,
+            zoom=8,
+        )
+
+        print("\n== Compatibility Report ==")
+        print(f"concept_id : {compat.concept_id}")
+        print(f"compatible : {compat.ok}")
+        print(f"formats    : {compat.tested_formats}")
+        print(f"resampling : {compat.tested_resampling}")
+
+        if compat.detected:
+            # Avoid dumping huge blobs (like full metadata); show highlights.
+            detected_view = {
+                k: v for k, v in compat.detected.items() if k != "_raw_info"
+            }
+            print(f"detected   : {detected_view}")
+
+        df_tiles = await benchmark_titiler_cmr(
+            endpoint=endpoint,
+            ds=ds,
             tms=tms,
             min_zoom=8,
             max_zoom=10,
+            format="png",
         )
-
 
         pd.set_option("display.max_rows", None)
         pd.set_option("display.max_columns", None)
         pd.set_option("display.width", None)
         pd.set_option("display.max_colwidth", None)
-        print("Benchmark finished.")
-        print(df_rgb)
+
+        print("\n== Tile Benchmark Results ==")
+        print(df_tiles)
 
     asyncio.run(main())
