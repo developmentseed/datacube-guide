@@ -1,3 +1,4 @@
+
 """
 Benchmarking utility for Titiler-cmr
 """
@@ -17,58 +18,85 @@ TILES_HEIGHT = 5
 # ------------------------------
 # Helpers
 # ------------------------------
-def get_surrounding_tiles(
-    x: int, y: int, zoom: int, width: int = TILES_WIDTH, height: int = TILES_HEIGHT
-) -> List[Tuple[int, int]]:
+def _max_tile_index(z: int) -> int:
     """
-    Get a list of surrounding tile coordinates for a viewport around a central tile at (x,y).
-    From https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
+    Compute the maximum valid XYZ tile index for a given zoom level.
 
-     Parameters
-    ----------
-        x (int): The x-coordinate of the central tile.
-        y (int): The y-coordinate of the central tile.
+    At zoom level `z`, the map is subdivided into 2**z tiles along each axis
+    (x and y). The valid tile indices therefore range from 0 to (2**z - 1).
+    This helper returns the maximum valid index for both axes.
+
+    Args:
+        z (int): Zoom level (must be >= 0).
+
+    Returns:
+        int: The maximum valid tile index at zoom `z`
+             (i.e., 2**z - 1).
+
+    Raises:
+        ValueError: If `z` is negative.
+    """
+    if z < 0:
+        raise ValueError("zoom must be >= 0")
+    return (1 << z) - 1
+
+
+def get_surrounding_tiles(
+    center_x: int,
+    center_y: int,
+    zoom: int,
+    width: int = TILES_WIDTH,
+    height: int = TILES_HEIGHT,
+) -> list[tuple[int, int]]:
+    """
+    Get a list of surrounding tile coordinates for a viewport around (center_x, center_y).
+    This function builds a `width × height` viewport centered on the given tile at the specified zoom level.
+    from https://github.com/developmentseed/titiler-cmr/blob/develop/tests/test_hls_benchmark.py
+
+    Args:
+        center_x (int): The x index of the central tile.
+        center_y (int): The y index of the central tile.
         zoom (int): The zoom level.
         width (int, optional): The width of the viewport in tiles. Defaults to TILES_WIDTH.
         height (int, optional): The height of the viewport in tiles. Defaults to TILES_HEIGHT.
 
-    Returns
-    -------
-        List[Tuple[int, int]]: A list of (x, y) coordinates for the surrounding tiles.
+    Returns:
+        list[tuple[int, int]]: A list of (x, y) coordinates for the surrounding tiles.
+
+    Raises:
+        ValueError: If `width <= 0` or `height <= 0`.
+    
     """
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be > 0")
 
-    tiles: List[Tuple[int, int]] = []
-
-    # tiles = []
+    tiles: list[tuple[int, int]] = []
     offset_x = width // 2
     offset_y = height // 2
-    max_tile = 2**zoom - 1
+    max_tile = _max_tile_index(zoom)
 
-    for y_pos in range(y - offset_y, y + offset_y + 1):
-        for x_pos in range(x - offset_x, x + offset_x + 1):
-            # Ensure x, y are valid for the zoom level
-
+    for y_pos in range(center_y - offset_y, center_y + offset_y + 1):
+        for x_pos in range(center_x - offset_x, center_x + offset_x + 1):
             x_valid = max(0, min(x_pos, max_tile))
             y_valid = max(0, min(y_pos, max_tile))
             tiles.append((x_valid, y_valid))
-
     return tiles
 
 
 async def fetch_tile(
     client: httpx.AsyncClient,
     endpoint: str,
-    format="png",
+    format: str = "png",
     *,
     z: int,
     x: int,
     y: int,
     concept_id: str,
     datetime_range: str,
-    assets: List[str],
+    assets: list[str],
     resampling: str,
     colormap_name: str,
-    rescale: None | tuple[int, int],
+    rescale: tuple[int, int] | None,
 ) -> httpx.Response:
     """
     Fetch a single tile and return the httpx.response object.
@@ -93,17 +121,13 @@ async def fetch_tile(
         httpx.Response: The HTTP response object.
     """
 
-    # url = f"{endpoint}/tiles/WebMercatorQuad/{z}/{x}/{y}.png"
     url = f"{endpoint}/tiles/{z}/{x}/{y}.{format}"
-
-    params: Dict[str, Any] = {
+    params: dict[str, Any] = {
         "concept_id": concept_id,
         "datetime": datetime_range,
         "resampling": resampling,
         "colormap_name": colormap_name,
     }
-
-    # add assets (i.e. bands)
     if assets:
         params["assets"] = assets
     if rescale:
@@ -115,8 +139,8 @@ async def fetch_tile(
         response.raise_for_status()
         response.elapsed = time.perf_counter() - start_time
         return response
-    except Exception:
-        # Create a mock response for exceptions
+    except Exception as exc:
+        print(f"Error fetching tile {z}/{x}/{y}: {exc}")
         mock_response = httpx.Response(500, request=httpx.Request("GET", url))
         mock_response.elapsed = time.perf_counter() - start_time
         return mock_response
@@ -134,12 +158,12 @@ async def benchmark_titiler_cmr(
     tile_scale: int = 3,
     resampling: str = "nearest",
     colormap_name: str = "gnbu",
-    assets=[],
+    assets: list[str] = None,
     start_date: datetime = datetime(2023, 2, 24, 0, 0, 1),
     end_date: datetime = datetime(2023, 2, 25, 0, 0, 1),
     lng: float = -92.1,
     lat: float = 46.8,
-    rescale: None | tuple[int, int] = None,
+    rescale: tuple[int, int] | None = None,
 ) -> pd.DataFrame:
     """
     Benchmarks the Titiler-cmr API for a specific viewport across multiple zoom levels.
@@ -149,17 +173,15 @@ async def benchmark_titiler_cmr(
     """
 
     datetime_range = f"{start_date.isoformat()}/{end_date.isoformat()}"
-
-    # loop over all zoom levels...
     results = []
+    if assets is None:
+        assets = []
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         for zoom in range(min_zoom, max_zoom + 1):
             print(f"Benchmarking Zoom level: {zoom}...")
             center_tile = tms.tile(lng=lng, lat=lat, zoom=zoom)
             tiles_to_fetch = get_surrounding_tiles(center_tile.x, center_tile.y, zoom)
-
-            # all tasks to fetch tiles
             tasks = [
                 fetch_tile(
                     client=client,
@@ -169,7 +191,7 @@ async def benchmark_titiler_cmr(
                     y=y,
                     concept_id=concept_id,
                     datetime_range=datetime_range,
-                    assets=assets or [],
+                    assets=assets,
                     resampling=resampling,
                     colormap_name=colormap_name,
                     rescale=rescale,
@@ -177,21 +199,17 @@ async def benchmark_titiler_cmr(
                 for x, y in tiles_to_fetch
             ]
             responses = await asyncio.gather(*tasks)
-
             for (x, y), response in zip(tiles_to_fetch, responses):
-                results.append(
-                    {
-                        "zoom": zoom,
-                        "x": x,
-                        "y": y,
-                        "status_code": response.status_code,
-                        "response_time_sec": response.elapsed,
-                        "response_size_bytes": len(response.content),
-                        "is_error": response.is_error,
-                        "has_data": response.status_code == 200,  # 204 means no data
-                    }
-                )
-
+                results.append({
+                    "zoom": zoom,
+                    "x": x,
+                    "y": y,
+                    "status_code": response.status_code,
+                    "response_time_sec": response.elapsed,
+                    "response_size_bytes": len(response.content),
+                    "is_error": response.is_error,
+                    "has_data": response.status_code == 200,
+                })
     return pd.DataFrame(results)
 
 
