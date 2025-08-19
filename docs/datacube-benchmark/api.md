@@ -11,3 +11,15 @@
 ::: datacube_benchmark.benchmark_access_patterns
 
 ::: datacube_benchmark.types.TARGET_SHAPES
+
+::: datacube_benchmark.titiler_cmr_utils.DatasetParams
+
+::: datacube_benchmark.titiler_cmr_utils.benchmark_titiler_cmr
+
+::: datacube_benchmark.titiler_cmr_utils.CompatibilityReport
+
+::: datacube_benchmark.titiler_cmr_utils.check_titiler_cmr_compatibility
+
+::: datacube_benchmark.titiler_cmr_utils.get_surrounding_tiles
+
+::: datacube_benchmark.titiler_cmr_utils.fetch_tile
