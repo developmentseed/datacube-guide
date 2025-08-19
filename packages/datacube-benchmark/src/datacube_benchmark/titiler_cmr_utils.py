@@ -100,9 +100,17 @@ class TileBenchConfig:
 @dataclass(frozen=True)
 class CompatibilityReport:
     """
-    Outcome of a quick, heuristic compatibility probe.
-    """
+    Structured result from a Titiler-CMR compatibility check.
 
+    This report summarizes whether a dataset (by concept ID) can be successfully
+    served through a given Titiler-CMR deployment. It records:
+
+      - `ok`: True if at least one tested format and one resampling method succeeded.
+      - `tested_formats`: Map of image formats → success (bool).
+      - `tested_resampling`: Map of resampling methods → success (bool).
+      - `detected`: Any metadata hints extracted from info/metadata endpoints 
+        (e.g., variables, temporal extent, backend).   
+    """
     concept_id: str
     ok: bool
     tested_formats: Dict[str, bool]
@@ -385,7 +393,7 @@ async def fetch_tile(
 # Compatibility Test
 # ---------------------------------------------------------------------
 
-async def compatibility_test(
+async def check_titiler_cmr_compatibility(
     endpoint: str,
     ds: DatasetParams,
     *,
@@ -622,7 +630,7 @@ if __name__ == "__main__":
             assets=["B04", "B03", "B02"],
         )
 
-        compat = await compatibility_test(
+        compat = await check_titiler_cmr_compatibility(
             endpoint=endpoint,
             ds=ds,
             lng=-92.1,
