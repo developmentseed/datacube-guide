@@ -72,32 +72,6 @@ class DatasetParams:
 
 
 @dataclass(frozen=True)
-class TileBenchConfig:
-    """
-    Configuration for tile benchmarking.
-    """
-
-    min_zoom: int = 7
-    max_zoom: int = 10
-    tiles_width: int = 5
-    tiles_height: int = 5
-    image_format: str = "png"
-    lng: float = -92.1
-    lat: float = 46.8
-
-    def validate(self) -> None:
-        """Validate configuration values and raise `ValueError` if invalid."""
-        if self.max_zoom < self.min_zoom:
-            raise ValueError("max_zoom must be >= min_zoom.")
-        if self.tiles_width <= 0 or self.tiles_height <= 0:
-            raise ValueError("Tile window dimensions must be positive.")
-        if self.image_format not in SUPPORTED_TILE_FORMATS:
-            raise ValueError(
-                f"Format must be one of: {', '.join(SUPPORTED_TILE_FORMATS)}."
-            )
-
-
-@dataclass(frozen=True)
 class CompatibilityReport:
     """
     Structured result from a Titiler-CMR compatibility check.
