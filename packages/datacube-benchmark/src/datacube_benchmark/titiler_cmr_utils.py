@@ -452,29 +452,6 @@ async def check_titiler_cmr_compatibility(
     detected: Dict[str, Any] = {}
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
-        # Try to glean useful hints from typical metadata/info endpoints.
-        for path in info_paths:
-            print(f"Trying info path: {path}")
-            url = f"{endpoint}/{path}"
-            meta = await _get_json(client, url, params_base)
-            if meta:
-                if any(k in meta for k in ("variables", "variable", "assets", "bands")):
-                    for k in ("variables", "variable", "assets", "bands"):
-                        if k in meta and meta[k]:
-                            detected["variables"] = meta[k]
-                            print(f"Detected variables: {detected['variables']}")
-                            break
-                for k in ("datetime_range", "time_range", "temporal_extent"):
-                    if k in meta and meta[k]:
-                        detected["datetime_range"] = meta[k]
-                        break
-                for k in ("backend", "driver", "reader"):
-                    if k in meta and meta[k]:
-                        detected["backend"] = meta[k]
-                        break
-                detected["_raw_info"] = meta
-                break
-
         # Try formats.
         for fmt in fmt_list:
             url = f"{endpoint}/tiles/{center.z}/{center.x}/{center.y}.{fmt}"
