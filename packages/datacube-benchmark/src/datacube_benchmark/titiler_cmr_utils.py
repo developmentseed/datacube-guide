@@ -147,6 +147,7 @@ def _build_tile_url(
         path += f"@{scale}x"
     if fmt:
         path += f".{fmt}"
+    #print (base+path)
     return base + path
 
 
@@ -344,7 +345,7 @@ async def fetch_tile(
         "colormap_name": colormap_name,
     }
     if assets:
-        params["assets"] = assets
+        params["assets"] = ",".join(assets)
     if rescale:
         params["rescale"] = f"{rescale[0]},{rescale[1]}"
 
