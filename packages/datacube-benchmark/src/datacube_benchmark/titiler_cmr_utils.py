@@ -574,7 +574,7 @@ async def benchmark_titiler_cmr(
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         for zoom in range(min_zoom, max_zoom + 1):
-            print(f"Benchmarking Zoom level: {zoom}...")
+            #print(f"Benchmarking Zoom level: {zoom}...")
             center_tile = tms.tile(lng=lng, lat=lat, zoom=zoom)
             tiles_to_fetch = get_surrounding_tiles(center_tile.x, center_tile.y, zoom)
 
@@ -609,7 +609,41 @@ async def benchmark_titiler_cmr(
                         "has_data": response.status_code == 200,
                     }
                 )
+
     return pd.DataFrame(results)
+
+def summarize_tiling_benchmark(df: pd.DataFrame) -> pd.DataFrame:
+    """Summarizes tile benchmark results.
+
+    Args:
+        df (pd.DataFrame): The tile benchmark results DataFrame.
+
+    Returns:
+        pd.DataFrame: A summarized DataFrame with key metrics.
+    """
+    if df.empty:
+        return df
+
+    g = df.groupby("zoom")
+    out = pd.DataFrame({
+        "zoom_level": g.size().index,
+        "total_requests": g.size().values,
+        "success_rate_pct": 100 * g["status_code"].apply(lambda s: (s == 200).mean()),
+        "no_data_rate_pct": 100 * g["status_code"].apply(lambda s: (s == 204).mean()),
+        "error_rate_pct": 100 * g["is_error"].mean(),
+        "latency_median_s": g["response_time_sec"].quantile(0.5),
+        "latency_p95_s": g["response_time_sec"].quantile(0.95),
+        "avg_response_size_bytes": g["response_size_bytes"].mean(),
+    }).reset_index(drop=True)
+
+    # Rounding for readability
+    for c in ("success_rate_pct", "no_data_rate_pct", "error_rate_pct"):
+        out[c] = out[c].round(2)
+    out["latency_median_s"] = out["latency_median_s"].round(2)
+    out["latency_p95_s"] = out["latency_p95_s"].round(2)
+    out["avg_response_size_bytes"] = out["avg_response_size_bytes"].round(1)
+
+    return out.sort_values("zoom_level")
 
 
 if __name__ == "__main__":
