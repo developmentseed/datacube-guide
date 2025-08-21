@@ -6,11 +6,11 @@ The TiTiler ecosystem is a comprehensive suite of Python tools for creating dyna
 
 **titiler.core** - Foundation libraries for creating FastAPI applications that serve dynamic tiles from Cloud Optimized GeoTIFFs (COGs) and SpatioTemporal Asset Catalog (STAC) items.
 
-**titiler.xarray** - Specialized libraries for creating dynamic tile servers from multi-dimensional datasets stored in Zarr or NetCDF formats.
+**titiler.xarray** - Specialized extension for dynamically serving tiles from multi-dimensional datasets stored in Zarr or NetCDF formats.
 
 **titiler.extensions** - Plugin system providing additional functionality for TiTiler factories, such as custom algorithms, authentication, and data processing extensions.
 
-**titiler.mosaic** - Libraries for creating dynamic tile servers that can serve mosaicked imagery from multiple sources using the MosaicJSON specification.
+**titiler.mosaic** - Extension for dynamically serving tiles from multiple sources using the MosaicJSON specification.
 
 **titiler.application** - Complete reference implementation demonstrating a FastAPI application with full support for COGs, STAC items, and MosaicJSON mosaics.
 
