@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from urllib import response
 
 import httpx
 import morecantile
@@ -26,6 +25,7 @@ TILES_HEIGHT = 5
 SUPPORTED_TILE_FORMATS: set[str] = {
     "png", "npy", "tiff", "jpeg", "jpg", "jp2", "webp", "pngraw",
 }
+
 
 def get_surrounding_tiles(
     center_x: int,
@@ -77,6 +77,8 @@ def get_surrounding_tiles(
 class DatasetParams:
     """
     Parameters needed to request tiles from TiTiler-CMR.
+
+
     """
     concept_id: str
     datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
@@ -110,13 +112,13 @@ class DatasetParams:
             params.append(("variable", self.variable))
 
         elif self.backend == "rasterio":
-            if not (self.bands and self.bands_regex.strip()):
+            # guard for None before .strip()
+            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
                 raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
             for b in self.bands:
                 params.append(("bands", b))
-            if self.bands_regex:
-                params.append(("bands_regex", self.bands_regex))
-        
+            params.append(("bands_regex", self.bands_regex))
+
         else:
             raise ValueError("backend must be 'xarray' or 'rasterio'")
 
@@ -131,7 +133,6 @@ class DatasetParams:
 
 
 # ------------------------------
-# ------------------------------
 def fetch_tile(
     *,
     tiles_templates: List[str],
@@ -144,19 +145,63 @@ def fetch_tile(
     """
     For a single (z,x,y), iterate over all tiles templates, GET the tile, print status,
     and return one record per request.
+
+     Parameters
+    ----------
+        tiles_templates : list of str
+            A list of URL templates containing ``{z}``, ``{x}``, and ``{y}`` placeholders.
+        z : int
+            The zoom level of the tile.
+        x : int
+            The x index of the tile.
+        y : int
+            The y index of the tile.
+        concept_id : str
+            The concept ID to use for the request.
+        datetime_range : str
+            The datetime range to use for the request.
+        assets : list[str]
+            The list of asset IDs to include in the request.
+        resampling : str
+            The resampling method to use for the request.
+        colormap_name : str
+            The colormap to use for the request.
+        rescale : tuple[int, int], optional
+            The rescale parameters to use for the request.
+
+    Returns
+    -------
+    list of dict
+        One dictionary per requested template with (at least) the following keys:
+
+        - ``z`` (int): zoom level.
+        - ``x`` (int): tile x index.
+        - ``y`` (int): tile y index.
+        - ``timestep_index`` (int): index of the template within ``tiles_templates``.
+        - ``url`` (str): fully formatted request URL.
+        - ``status_code`` (int or None): HTTP status code; ``None`` if the request failed.
+        - ``elapsed_s`` (float): wall-clock time for the request (seconds).
+        - ``size_bytes`` (int): response body size in bytes (``0`` if no content or on failure).
+        - ``content_type`` (str or None): value of the ``Content-Type`` header, if present.
+        - ``ok`` (bool): ``True`` iff ``status_code == 200``.
+        - ``no_data`` (bool): ``True`` iff ``status_code == 204``.
+        - ``error_text`` (str or None): short error snippet for non-2xx responses or exceptions.
+        - ``rss_before`` (int or float): process RSS (bytes) before the request (``0``/``NaN`` if unavailable).
+        - ``rss_after`` (int or float): process RSS (bytes) after the request (``0``/``NaN`` if unavailable).
+        - ``rss_delta`` (int or float): ``rss_after - rss_before`` (bytes; ``NaN`` on error).
+
+
     """
-    
     rows: List[Dict[str, Any]] = []
 
-    # iterate over timeseries urls....
     for i, tmpl in enumerate(tiles_templates):
         tile_url = tmpl.format(z=z, x=x, y=y)
         try:
-            rss_before = proc.memory_info().rss
+            rss_before = proc.memory_info().rss if proc is not None else 0
             t0 = time.perf_counter()
             response = httpx.get(tile_url, timeout=timeout_s)
             elapsed = time.perf_counter() - t0
-            rss_after = proc.memory_info().rss
+            rss_after = proc.memory_info().rss if proc is not None else 0
             rss_delta = rss_after - rss_before
 
             status = response.status_code
@@ -164,10 +209,10 @@ def fetch_tile(
             size = len(response.content) if response.content is not None else 0
 
             # Friendlier console line with readable RSS delta
-            #print(
-            #    f"[{i}] {status} {ctype or ''} | body={_fmt_bytes(size)} | "
-            #    f"rssΔ={_fmt_bytes(rss_delta)} | {tile_url}"
-            #)
+            # print(
+            #     f"[{i}] {status} {ctype or ''} | body={_fmt_bytes(size)} | "
+            #     f"rssΔ={_fmt_bytes(rss_delta)} | {tile_url}"
+            # )
 
             if status >= 400:
                 try:
@@ -190,6 +235,8 @@ def fetch_tile(
                     "no_data": (status == 204),
                     "error_text": None if status < 400 else response.text[:400],
                     # memory metrics (in bytes, keep numeric for analysis)
+                    "rss_before": rss_before,
+                    "rss_after": rss_after,
                     "rss_delta": rss_delta,
                 }
             )
@@ -211,6 +258,8 @@ def fetch_tile(
                     "no_data": False,
                     "error_text": f"{type(ex).__name__}: {ex}",
                     # memory metrics (NaN on error)
+                    "rss_before": float("nan"),
+                    "rss_after": float("nan"),
                     "rss_delta": float("nan"),
                 }
             )
@@ -247,7 +296,7 @@ async def benchmark_titiler_cmr(
     step: str = "P1W",
     temporal_mode: str = "interval",
     # NEW: allow bounded concurrency
-    # Removed duplicate parameter definition
+    max_workers: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     1) GET /timeseries/.../tilejson.json to obtain tile templates
@@ -289,8 +338,8 @@ async def benchmark_titiler_cmr(
         ("tile_format", tile_format),
     ]
 
-    print ('----------')
-    print (*params, sep='\n')
+    print('----------')
+    print(*params, sep='\n')
 
     ts_url = f"{endpoint.rstrip('/')}/timeseries/WebMercatorQuad/tilejson.json"
     r = httpx.get(ts_url, params=params, timeout=timeout_s)
@@ -313,19 +362,21 @@ async def benchmark_titiler_cmr(
     all_rows: List[Dict[str, Any]] = []
 
     loop = asyncio.get_running_loop()
-    executor = ThreadPoolExecutor(max_workers=psutil.cpu_count(logical=True))
+    if max_workers is None:
+        max_workers = psutil.cpu_count(logical=True)
+    executor = ThreadPoolExecutor(max_workers=max_workers)
 
-    for zoom in range(min_zoom, max_zoom + 1):
-        center = tms.tile(lng=lng, lat=lat, zoom=zoom)
-        tiles_to_fetch = get_surrounding_tiles(center.x, center.y, zoom, viewport_width, viewport_height)
-        print(f"\nZoom {zoom}: {len(tiles_to_fetch)} tiles around ({center.x},{center.y})")
+    for z in range(min_zoom, max_zoom + 1):
+        center = tms.tile(lng=lng, lat=lat, zoom=z)
+        tiles_to_fetch = get_surrounding_tiles(center.x, center.y, z, viewport_width, viewport_height)
+        print(f"\nZoom {z}: {len(tiles_to_fetch)} tiles around ({center.x},{center.y})")
         tasks = [
             loop.run_in_executor(
                 executor,
                 partial(
                     fetch_tile,
                     tiles_templates=tiles_templates,
-                    z=zoom,
+                    z=z,
                     x=x,
                     y=y,
                     timeout_s=timeout_s,
@@ -342,7 +393,7 @@ async def benchmark_titiler_cmr(
 
     df = pd.DataFrame(all_rows)
     if not df.empty:
-        df = df.sort_values(["zoom", "y", "x", "timestep_index"]).reset_index(drop=True)
+        df = df.sort_values(["z", "y", "x", "timestep_index"]).reset_index(drop=True)
 
         try:
             rss_after_num = pd.to_numeric(df["rss_after"], errors="coerce")
@@ -352,6 +403,7 @@ async def benchmark_titiler_cmr(
             pass
 
     return df
+
 
 # ---------------------------------------------------------------------
 # Helpers
@@ -374,6 +426,7 @@ def _fmt_bytes(n: int | float) -> str:
         i += 1
     return f"{sign}{n:.2f} {units[i]}"
 
+
 def _max_tile_index(z: int) -> int:
     """
     Compute the maximum valid XYZ tile index for a given zoom level.
@@ -385,7 +438,8 @@ def _max_tile_index(z: int) -> int:
         raise ValueError("zoom must be >= 0")
     return (1 << z) - 1
 
- async def check_titiler_cmr_compatibility(
+
+async def check_titiler_cmr_compatibility(
     endpoint: str,
     concept_id: str,
     datetime_range: str,
@@ -476,8 +530,6 @@ def _max_tile_index(z: int) -> int:
     if times:
         ts = pd.to_datetime(times, utc=True, errors="coerce").dropna().sort_values()
         times = [t.isoformat().replace("+00:00", "Z") for t in ts.to_pydatetime()]
-    else:
-        ts = pd.Series([], dtype="datetime64[ns, UTC]")
 
     # Build summary
     summary = {
@@ -491,7 +543,6 @@ def _max_tile_index(z: int) -> int:
         summary["granule_datetimes"] = times
 
     return summary
-
 
 
 # ------------------------------
@@ -515,7 +566,7 @@ if __name__ == "__main__":
         backend = "xarray"
         variable = "precipitation"
 
-        endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
+        # Overwrite for demo range
         concept_id = "C2723754864-GES_DISC"
         datetime_range = "2024-10-01T00:00:00Z/2024-10-05T23:59:59Z"
 
@@ -527,7 +578,7 @@ if __name__ == "__main__":
         )
 
         # Access structured results programmatically
-        summary = result["summary"]
+        summary = result  # function already returns the flat summary dict
         print("Summary object:", summary)
 
         # Example: decide if you should proceed
@@ -535,7 +586,6 @@ if __name__ == "__main__":
             print("No granules available in this date range. Skipping benchmark.")
         else:
             print(f"Proceeding: {summary['n_granules']} granules found.")
-
 
         df = await benchmark_titiler_cmr(
             endpoint=endpoint,
@@ -554,6 +604,8 @@ if __name__ == "__main__":
             step=step,
             temporal_mode=temporal_mode,
             tile_format=tile_format,
+            # max_workers defaults to all logical cores; override if you want
+            # max_workers=32,
         )
         # Show head with pretty columns
         print(df.head())
@@ -564,7 +616,7 @@ if __name__ == "__main__":
         pd.set_option("display.max_colwidth", None)
 
         # Numeric summary first (keeps bytes columns numeric)
-        summary = df.groupby("z").agg(
+        zoom_summary = df.groupby("z").agg(
             n_requests=("ok", "size"),
             ok=("ok", "sum"),
             no_data=("no_data", "sum"),
@@ -575,10 +627,10 @@ if __name__ == "__main__":
             p95_rss_delta_B=("rss_delta", lambda s: pd.to_numeric(s, errors="coerce").quantile(0.95)),
         )
         print("\nSummary by zoom (numeric bytes):")
-        print(summary)
+        print(zoom_summary)
 
         # Pretty-printed memory summary (string columns for readability)
-        pretty_summary = summary.copy()
+        pretty_summary = zoom_summary.copy()
         for col in ["median_size_B", "median_rss_delta_B", "p95_rss_delta_B"]:
             pretty_summary[col.replace("_B", "_h")] = pretty_summary[col].map(_fmt_bytes)
         print("\nSummary by zoom (human-readable memory):")
@@ -588,13 +640,13 @@ if __name__ == "__main__":
             "median_size_h", "median_rss_delta_h", "p95_rss_delta_h"
         ]])
 
-        concept_id= "C2036881735-POCLOUD"  # HLS L30
+        # Rasterio example
+        concept_id = "C2036881735-POCLOUD"  # HLS L30
         datetime_range = "2024-10-01T00:00:01Z/2024-10-30T00:00:01Z"
-        
+
         backend = "rasterio"
         bands = ["B04", "B03", "B02"]
         bands_regex = "B[0-9][0-9]"
-
 
         df_ri = await benchmark_titiler_cmr(
             endpoint=endpoint,
@@ -602,7 +654,7 @@ if __name__ == "__main__":
             datetime_range=datetime_range,
             backend=backend,
             bands=bands,
-            bands_regex= bands_regex,
+            bands_regex=bands_regex,
             colormap_name="gnbu",
             min_zoom=min_zoom,
             max_zoom=max_zoom,
@@ -612,7 +664,8 @@ if __name__ == "__main__":
             viewport_height=viewport_height,
             step=step,
             temporal_mode="point",
-            #tile_format="point",
+            # tile_format="point",  # enable if your API expects this for point mode
+            # max_workers=32,
         )
         print("\nRI head:\n", df_ri.head())
 
