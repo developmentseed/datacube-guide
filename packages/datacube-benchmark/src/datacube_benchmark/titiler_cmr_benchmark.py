@@ -72,66 +72,6 @@ def get_surrounding_tiles(
             tiles.append((x_valid, y_valid))
     return tiles
 
-
-@dataclass(frozen=True)
-class DatasetParams:
-    """
-    Parameters needed to request tiles from TiTiler-CMR.
-
-
-    """
-    concept_id: str
-    datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
-    backend: str = "xarray"  # "xarray" or "rasterio"
-
-    # xarray
-    variable: Optional[str] = None
-
-    # rasterio
-    bands: Optional[Sequence[str]] = None
-    bands_regex: Optional[str] = None
-
-    # optional visualization/processing
-    rescale: Optional[str] = None         # e.g., "0,46"
-    colormap_name: Optional[str] = None   # e.g., "viridis"
-    resampling: Optional[str] = None      # e.g., "nearest"
-
-    def to_query_params(self) -> List[Tuple[str, str]]:
-        """
-        Build query params for Tile endpoints depending on backend and options.
-        """
-        params: List[Tuple[str, str]] = [
-            ("concept_id", self.concept_id),
-            ("datetime", self.datetime_range),
-            ("backend", self.backend),
-        ]
-
-        if self.backend == "xarray":
-            if not self.variable:
-                raise ValueError("For backend='xarray', 'variable' must be provided.")
-            params.append(("variable", self.variable))
-
-        elif self.backend == "rasterio":
-            # guard for None before .strip()
-            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
-                raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
-            for b in self.bands:
-                params.append(("bands", b))
-            params.append(("bands_regex", self.bands_regex))
-
-        else:
-            raise ValueError("backend must be 'xarray' or 'rasterio'")
-
-        if self.rescale:
-            params.append(("rescale", self.rescale))
-        if self.colormap_name:
-            params.append(("colormap_name", self.colormap_name))
-        if self.resampling:
-            params.append(("resampling", self.resampling))
-
-        return params
-
-
 # ------------------------------
 def fetch_tile(
     *,
@@ -156,18 +96,10 @@ def fetch_tile(
             The x index of the tile.
         y : int
             The y index of the tile.
-        concept_id : str
-            The concept ID to use for the request.
-        datetime_range : str
-            The datetime range to use for the request.
-        assets : list[str]
-            The list of asset IDs to include in the request.
-        resampling : str
-            The resampling method to use for the request.
-        colormap_name : str
-            The colormap to use for the request.
-        rescale : tuple[int, int], optional
-            The rescale parameters to use for the request.
+        timeout_s : float
+            Request timeout in seconds. Default is 30.0 seconds.
+        proc : psutil.Process, optional
+            The process to monitor for memory usage. If not provided, memory metrics will be unavailable.
 
     Returns
     -------
@@ -265,6 +197,68 @@ def fetch_tile(
             )
 
     return rows
+
+
+@dataclass(frozen=True)
+class DatasetParams:
+    """
+    Parameters needed to request tiles from TiTiler-CMR.
+
+
+    """
+    concept_id: str
+    datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
+    backend: str = "xarray"  # "xarray" or "rasterio"
+
+    # xarray
+    variable: Optional[str] = None
+
+    # rasterio
+    bands: Optional[Sequence[str]] = None
+    bands_regex: Optional[str] = None
+
+    # optional visualization/processing
+    rescale: Optional[str] = None         # e.g., "0,46"
+    colormap_name: Optional[str] = None   # e.g., "viridis"
+    resampling: Optional[str] = None      # e.g., "nearest"
+
+    def to_query_params(self) -> List[Tuple[str, str]]:
+        """
+        Build query params for Tile endpoints depending on backend and options.
+        """
+        params: List[Tuple[str, str]] = [
+            ("concept_id", self.concept_id),
+            ("datetime", self.datetime_range),
+            ("backend", self.backend),
+        ]
+
+        if self.backend == "xarray":
+            if not self.variable:
+                raise ValueError("For backend='xarray', 'variable' must be provided.")
+            params.append(("variable", self.variable))
+
+        elif self.backend == "rasterio":
+            # guard for None before .strip()
+            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
+                raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
+            for b in self.bands:
+                params.append(("bands", b))
+            params.append(("bands_regex", self.bands_regex))
+
+        else:
+            raise ValueError("backend must be 'xarray' or 'rasterio'")
+
+        if self.rescale:
+            params.append(("rescale", self.rescale))
+        if self.colormap_name:
+            params.append(("colormap_name", self.colormap_name))
+        if self.resampling:
+            params.append(("resampling", self.resampling))
+
+        return params
+
+
+
 
 
 # ------------------------------
