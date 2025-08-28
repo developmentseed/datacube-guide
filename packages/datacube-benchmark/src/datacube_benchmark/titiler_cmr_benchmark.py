@@ -199,12 +199,32 @@ def fetch_tile(
     return rows
 
 
-@dataclass(frozen=True)
+@dataclass
 class DatasetParams:
     """
     Parameters needed to request tiles from TiTiler-CMR.
 
+    This class encapsulates the metadata and visualization options needed to build
+    query parameters for tile requests against the TiTiler-CMR API. Depending on the
+    chosen backend (`xarray` or `rasterio`), different fields are required.
 
+    Attributes
+    ----------
+    concept_id : str
+    datetime_range : str
+    backend : str, default="xarray"
+    variable : str, optional
+    bands : Sequence[str], optional
+    bands_regex : str, optional
+    rescale : str, optional
+    colormap_name : str, optional
+    resampling : str, optional
+
+    Methods
+    -------
+    to_query_params() -> List[Tuple[str, str]]
+        Build a list of (key, value) pairs suitable for passing as query parameters
+        to TiTiler-CMR tile endpoints. Validates backend-specific requirements.
     """
     concept_id: str
     datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
@@ -258,9 +278,6 @@ class DatasetParams:
         return params
 
 
-
-
-
 # ------------------------------
 # Timeseries-only benchmark (async wrapper)
 # ------------------------------
@@ -273,6 +290,7 @@ async def benchmark_titiler_cmr(
     variable: Optional[str] = None,
     bands: Optional[Sequence[str]] = None,
     bands_regex: Optional[str] = None,
+    # ------ titiler-cmr params ------
     rescale: Optional[str] = None,
     colormap_name: Optional[str] = "viridis",
     resampling: Optional[str] = None,  # kept for parity; not used by timeseries TileJSON
