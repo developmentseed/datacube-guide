@@ -73,7 +73,8 @@ def get_surrounding_tiles(
     return tiles
 
 # ------------------------------
-def fetch_tile(
+async def fetch_tile(
+    client: httpx.AsyncClient,
     *,
     tiles_templates: List[str],
     z: int,
@@ -291,47 +292,47 @@ async def benchmark_titiler_cmr(
     bands: Optional[Sequence[str]] = None,
     bands_regex: Optional[str] = None,
     # ------ titiler-cmr params ------
-    rescale: Optional[str] = None,
-    colormap_name: Optional[str] = "viridis",
-    resampling: Optional[str] = None,  # kept for parity; not used by timeseries TileJSON
-    projection: str = "WebMercatorQuad",
-#    tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
+    tms_id: str = "WebMercatorQuad",
+    tile_format: str = "png",
+    tile_scale: int = 1,
     min_zoom: int = 7,
     max_zoom: int = 10,
-    tile_scale: int = 1,              # timeseries templates typically bake this in; kept for parity
+    rescale: Optional[str] = None,
+    colormap_name: Optional[str] = "viridis",
+    resampling: Optional[str] = None,
+    # ---  
     lng: float = -92.1,
     lat: float = 46.8,
     timeout_s: float = 30.0,
-    tile_format: str = "png",
-    viewport_width: int = TILES_WIDTH,
-    viewport_height: int = TILES_HEIGHT,
+    viewport_width: int = 5,
+    viewport_height: int = 5,
     # timeseries specifics:
     step: str = "P1W",
     temporal_mode: str = "interval",
-    # NEW: allow bounded concurrency
-    max_workers: Optional[int] = None,
+    # httpx concurrency limits (tune as needed)
+    max_connections: int = 100,
+    max_connections_per_host: int = 20,
+    **kwargs: Any,
+
 ) -> pd.DataFrame:
     """
-    1) GET /timeseries/.../tilejson.json to obtain tile templates
-    2) For each zoom & viewport tile, run fetch_tile(...) over all templates
+    1) GET /timeseries/{tms_id}/tilejson.json to obtain tile templates
+    2) For each zoom & viewport tile, run fetch_tile(...) over all templates using a shared AsyncClient
     3) Return a tidy DataFrame with one row per request
     """
-    # Friendly system banner
     print(
         f"System: {psutil.cpu_count(logical=False)} physical / "
         f"{psutil.cpu_count(logical=True)} logical cores | "
         f"RAM: {_fmt_bytes(psutil.virtual_memory().total)}"
     )
 
-    # TODO: improve this
-    # Optional: Validate tile_format against supported list
     if tile_format not in SUPPORTED_TILE_FORMATS:
         raise ValueError(
             f"Unsupported tile_format '{tile_format}'. "
             f"Supported: {sorted(SUPPORTED_TILE_FORMATS)}"
         )
 
-    # ---- 1) get timeseries TileJSON (sync call to mirror your snippet) ----
+    # Build query params (list of tuples to preserve duplicates like multiple 'bands')
     ds = DatasetParams(
         concept_id=concept_id,
         datetime_range=datetime_range,
@@ -349,66 +350,63 @@ async def benchmark_titiler_cmr(
         ("minzoom", str(min_zoom)),
         ("maxzoom", str(max_zoom)),
         ("tile_format", tile_format),
-    ]
-    
-    print('----------')
-    print(*params, sep='\n')
+    ] + [(k, str(v)) for k, v in kwargs.items()]
 
-    tms = morecantile.tms.get("WebMercatorQuad")
-    ts_url = f"{endpoint.rstrip('/')}/timeseries/{projection}/tilejson.json"
-    r = httpx.get(ts_url, params=params, timeout=timeout_s)
-    r.raise_for_status()  # ensure non-200 errors are surfaced
-    ts_json = r.json()
+    print("----------")
+    print(*params, sep="\n")
 
-    # Flatten all templates across timesteps
-    tiles_templates: List[str] = [
-        t for v in ts_json.values() if isinstance(v, dict) for t in v.get("tiles", [])
-    ]
-    # Print both timesteps (dicts with "tiles") and the total number of templates
-    n_timesteps = sum(1 for v in ts_json.values() if isinstance(v, dict) and "tiles" in v)
-    print(f"TileJSON: timesteps={n_timesteps} | templates={len(tiles_templates)}")
+    # 1) fetch TileJSON with a short-lived sync call (fine), or use AsyncClient too:
+    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
+    tms = morecantile.tms.get(tms_id)
 
-    if not tiles_templates:
-        raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
+    # Use AsyncClient for consistency
+    limits = httpx.Limits(
+        max_connections=max_connections,
+        max_keepalive_connections=max_connections_per_host,
+    )
+    async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
+        r = await client.get(ts_url, params=params)
+        #r.raise_for_status()
+        ts_json = r.json()
 
-    # ---- 2) iterate zooms & viewport tiles; run fetch_tile in a bounded thread pool ----
-    proc = psutil.Process()
-    all_rows: List[Dict[str, Any]] = []
+        tiles_templates = [tile for v in ts_json.values() for tile in v.get("tiles", [])]
+        if not tiles_templates:
+            raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
+        n_timesteps = len(tiles_templates)
+        
+        print(f"TileJSON: timesteps={n_timesteps} | templates={len(tiles_templates)}")
 
-    loop = asyncio.get_running_loop()
-    if max_workers is None:
-        max_workers = psutil.cpu_count(logical=True)
-    executor = ThreadPoolExecutor(max_workers=max_workers)
+        # 2) build tasks and fetch concurrently with the SAME client
+        proc = psutil.Process()
 
-    for z in range(min_zoom, max_zoom + 1):
-        center = tms.tile(lng=lng, lat=lat, zoom=z)
-        tiles_to_fetch = get_surrounding_tiles(center.x, center.y, z, viewport_width, viewport_height)
-        print(f"\nZoom {z}: {len(tiles_to_fetch)} tiles around ({center.x},{center.y})")
-        tasks = [
-            loop.run_in_executor(
-                executor,
-                partial(
-                    fetch_tile,
-                    tiles_templates=tiles_templates,
-                    z=z,
-                    x=x,
-                    y=y,
-                    timeout_s=timeout_s,
-                    proc=proc,  # pass process handle for memory deltas
-                ),
-            )
-            for (x, y) in tiles_to_fetch
-        ]
+        tasks: List[asyncio.Task] = []
+        for z in range(min_zoom, max_zoom + 1):
+            center = tms.tile(lng=lng, lat=lat, zoom=z)
+            tiles_xy = get_surrounding_tiles(center.x, center.y, z, viewport_width, viewport_height)
+            print(f"\nZoom {z}: {len(tiles_xy)} tiles around ({center.x},{center.y})")
 
-        responses = await asyncio.gather(*tasks)
+            for x, y in tiles_xy:
+                tasks.append(
+                    asyncio.create_task(
+                        fetch_tile(
+                            client,
+                            tiles_templates=tiles_templates,
+                            z=z,
+                            x=x,
+                            y=y,
+                            timeout_s=timeout_s,
+                            proc=proc,
+                        )
+                    )
+                )
 
-        for rows in responses:
-            all_rows.extend(rows)
+        results_lists = await asyncio.gather(*tasks)
 
+    # 3) flatten & frame
+    all_rows: List[Dict[str, Any]] = [row for rows in results_lists for row in rows]
     df = pd.DataFrame(all_rows)
     if not df.empty:
         df = df.sort_values(["z", "y", "x", "timestep_index"]).reset_index(drop=True)
-
         try:
             rss_after_num = pd.to_numeric(df["rss_after"], errors="coerce")
             rss_peak = int(rss_after_num.max())
@@ -566,7 +564,7 @@ if __name__ == "__main__":
     async def _run():
         endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
         min_zoom = 8
-        max_zoom = 9
+        max_zoom = 8
         lng = -92.1
         lat = 46.8
         viewport_width = 5
@@ -576,7 +574,7 @@ if __name__ == "__main__":
         tile_format = "png"
 
         concept_id = "C2723754864-GES_DISC"
-        datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
+        #datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
         backend = "xarray"
         variable = "precipitation"
 
