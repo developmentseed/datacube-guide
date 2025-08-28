@@ -132,7 +132,7 @@ async def fetch_tile(
         try:
             rss_before = proc.memory_info().rss if proc is not None else 0
             t0 = time.perf_counter()
-            response = httpx.get(tile_url, timeout=timeout_s)
+            response = await client.get(tile_url, timeout=timeout_s)
             elapsed = time.perf_counter() - t0
             rss_after = proc.memory_info().rss if proc is not None else 0
             rss_delta = rss_after - rss_before
@@ -140,12 +140,6 @@ async def fetch_tile(
             status = response.status_code
             ctype = response.headers.get("content-type")
             size = len(response.content) if response.content is not None else 0
-
-            # Friendlier console line with readable RSS delta
-            # print(
-            #     f"[{i}] {status} {ctype or ''} | body={_fmt_bytes(size)} | "
-            #     f"rssΔ={_fmt_bytes(rss_delta)} | {tile_url}"
-            # )
 
             if status >= 400:
                 try:
@@ -167,7 +161,6 @@ async def fetch_tile(
                     "ok": (status == 200),
                     "no_data": (status == 204),
                     "error_text": None if status < 400 else response.text[:400],
-                    # memory metrics (in bytes, keep numeric for analysis)
                     "rss_before": rss_before,
                     "rss_after": rss_after,
                     "rss_delta": rss_delta,
@@ -184,13 +177,12 @@ async def fetch_tile(
                     "timestep_index": i,
                     "url": tile_url,
                     "status_code": None,
-                    "elapsed_s": float("nan"),  # ensure numeric column
+                    "elapsed_s": float("nan"),
                     "size_bytes": 0,
                     "content_type": None,
                     "ok": False,
                     "no_data": False,
                     "error_text": f"{type(ex).__name__}: {ex}",
-                    # memory metrics (NaN on error)
                     "rss_before": float("nan"),
                     "rss_after": float("nan"),
                     "rss_delta": float("nan"),
@@ -400,19 +392,31 @@ async def benchmark_titiler_cmr(
                     )
                 )
 
-        results_lists = await asyncio.gather(*tasks)
+        results_lists = await asyncio.gather(*tasks, return_exceptions=True)
 
     # 3) flatten & frame
-    all_rows: List[Dict[str, Any]] = [row for rows in results_lists for row in rows]
+    all_rows: List[Dict[str, Any]] = []
+    for rows in results_lists:
+        if isinstance(rows, Exception):
+            print(f"Task error: {rows}")
+            continue
+        if isinstance(rows, list):
+            all_rows.extend(rows)
+        else:
+            print(f"Unexpected result type: {type(rows)}")
+
+    required_cols = ["z", "y", "x", "timestep_index"]
     df = pd.DataFrame(all_rows)
-    if not df.empty:
-        df = df.sort_values(["z", "y", "x", "timestep_index"]).reset_index(drop=True)
+    if not df.empty and all(col in df.columns for col in required_cols):
+        df = df.sort_values(required_cols).reset_index(drop=True)
         try:
             rss_after_num = pd.to_numeric(df["rss_after"], errors="coerce")
             rss_peak = int(rss_after_num.max())
             print(f"\nPeak process RSS observed: {_fmt_bytes(rss_peak)}")
         except Exception:
             pass
+    else:
+        print(f"Warning: DataFrame is empty or missing columns: {required_cols}")
 
     return df
 
