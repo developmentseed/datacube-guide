@@ -294,7 +294,8 @@ async def benchmark_titiler_cmr(
     rescale: Optional[str] = None,
     colormap_name: Optional[str] = "viridis",
     resampling: Optional[str] = None,  # kept for parity; not used by timeseries TileJSON
-    tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
+    projection: str = "WebMercatorQuad",
+#    tms: morecantile.TileMatrixSet = morecantile.tms.get("WebMercatorQuad"),
     min_zoom: int = 7,
     max_zoom: int = 10,
     tile_scale: int = 1,              # timeseries templates typically bake this in; kept for parity
@@ -349,11 +350,12 @@ async def benchmark_titiler_cmr(
         ("maxzoom", str(max_zoom)),
         ("tile_format", tile_format),
     ]
-
+    
     print('----------')
     print(*params, sep='\n')
 
-    ts_url = f"{endpoint.rstrip('/')}/timeseries/WebMercatorQuad/tilejson.json"
+    tms = morecantile.tms.get("WebMercatorQuad")
+    ts_url = f"{endpoint.rstrip('/')}/timeseries/{projection}/tilejson.json"
     r = httpx.get(ts_url, params=params, timeout=timeout_s)
     r.raise_for_status()  # ensure non-200 errors are surfaced
     ts_json = r.json()
