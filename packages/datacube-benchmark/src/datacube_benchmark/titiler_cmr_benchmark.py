@@ -26,84 +26,34 @@ SUPPORTED_TILE_FORMATS: set[str] = {
     "png", "npy", "tiff", "jpeg", "jpg", "jp2", "webp", "pngraw",
 }
 
+import logging
+from dataclasses import dataclass, field
+
+
 @dataclass
 class DatasetParams:
     """
     Parameters needed to request tiles from TiTiler-CMR.
 
-    This class encapsulates the metadata and visualization options needed to build
-    query parameters for tile requests against the TiTiler-CMR API. Depending on the
-    chosen backend (`xarray` or `rasterio`), different fields are required.
-
-    Attributes
-    ----------
-    concept_id : str
-    datetime_range : str
-    backend : str, default="xarray"
-    variable : str, optional
-    bands : Sequence[str], optional
-    bands_regex : str, optional
-    rescale : str, optional
-    colormap_name : str, optional
-    resampling : str, optional
-
-    Methods
-    -------
-    to_query_params() -> List[Tuple[str, str]]
-        Build a list of (key, value) pairs suitable for passing as query parameters
-        to TiTiler-CMR tile endpoints. Validates backend-specific requirements.
+    Only concept_id, backend, and datetime_range are required. All other options are passed via kwargs.
     """
     concept_id: str
-    datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
-    backend: str = "xarray"  # "xarray" or "rasterio"
+    backend: str
+    datetime_range: str
+    kwargs: Dict[str, Any] = field(default_factory=dict)
 
-    # xarray
-    variable: Optional[str] = None
-
-    # rasterio
-    bands: Optional[Sequence[str]] = None
-    bands_regex: Optional[str] = None
-
-    # optional visualization/processing
-    rescale: Optional[str] = None         # e.g., "0,46"
-    colormap_name: Optional[str] = None   # e.g., "viridis"
-    resampling: Optional[str] = None      # e.g., "nearest"
-
-    def to_query_params(self, **kwargs: Any) -> List[Tuple[str, str]]:
+    def to_query_params(self, **extra_kwargs: Any) -> List[Tuple[str, str]]:
         """
-        Build query params for Tile endpoints depending on backend and options.
+        Build query params for Tile endpoints using all kwargs.
         """
         params: List[Tuple[str, str]] = [
             ("concept_id", self.concept_id),
-            ("datetime", self.datetime_range),
             ("backend", self.backend),
+            ("datetime", self.datetime_range),
         ]
-
-        if self.backend == "xarray":
-            if not self.variable:
-                raise ValueError("For backend='xarray', 'variable' must be provided.")
-            params.append(("variable", self.variable))
-
-        elif self.backend == "rasterio":
-            # guard for None before .strip()
-            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
-                raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
-            for b in self.bands:
-                params.append(("bands", b))
-            params.append(("bands_regex", self.bands_regex))
-
-        else:
-            raise ValueError("backend must be 'xarray' or 'rasterio'")
-
-        if self.rescale:
-            params.append(("rescale", self.rescale))
-        if self.colormap_name:
-            params.append(("colormap_name", self.colormap_name))
-        if self.resampling:
-            params.append(("resampling", self.resampling))
-
-        # -- additional kwargs --
-        for k, v in kwargs.items():
+        all_kwargs = dict(self.kwargs)
+        all_kwargs.update(extra_kwargs)
+        for k, v in all_kwargs.items():
             if v is None:
                 continue
             if isinstance(v, bool):
@@ -345,22 +295,24 @@ async def benchmark_titiler_cmr(
     # Build query params (list of tuples to preserve duplicates like multiple 'bands')
     ds = DatasetParams(
         concept_id=concept_id,
-        datetime_range=datetime_range,
         backend=backend,
-        variable=variable,
-        bands=bands,
-        bands_regex=bands_regex,
-        rescale=rescale,
-        colormap_name=colormap_name,
-        resampling=resampling,
+        datetime_range=datetime_range,
+        kwargs={
+            "variable": variable,
+            "bands": bands,
+            "bands_regex": bands_regex,
+            "rescale": rescale,
+            "colormap_name": colormap_name,
+            "resampling": resampling,
+            "step": step,
+            "temporal_mode": temporal_mode,
+            "minzoom": str(min_zoom),
+            "maxzoom": str(max_zoom),
+            "tile_format": tile_format,
+            **kwargs,
+        }
     )
-    params: List[Tuple[str, str]] = ds.to_query_params() + [
-        ("step", step),
-        ("temporal_mode", temporal_mode),
-        ("minzoom", str(min_zoom)),
-        ("maxzoom", str(max_zoom)),
-        ("tile_format", tile_format),
-    ] + [(k, str(v)) for k, v in kwargs.items()]
+    params: List[Tuple[str, str]] = ds.to_query_params()
 
     print("----------")
     print(*params, sep="\n")
