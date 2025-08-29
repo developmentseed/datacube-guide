@@ -3,6 +3,8 @@ Benchmarking utility for TiTiler-CMR.
 
 This module provides tools to evaluate the performance of the
 TiTiler-CMR API for geospatial tile rendering across multiple zoom levels.
+
+TODO: Remove memory profiling (lambda function....)
 """
 
 from __future__ import annotations
@@ -160,11 +162,12 @@ def get_surrounding_tiles(
             tiles.append((x_valid, y_valid))
     return tiles
 
+##TODO:  Put the generic funcitons in tiling-utils under /tiling
 # ------------------------------
 async def fetch_tile(
     client: httpx.AsyncClient,
     *,
-    tiles_templates: List[str],
+    tiles_endpoints: List[str],
     z: int,
     x: int,
     y: int,
@@ -172,14 +175,14 @@ async def fetch_tile(
     proc: Optional[psutil.Process] = None,
 ) -> List[Dict[str, Any]]:
     """
-    For a single (z,x,y), iterate over all tiles templates, GET the tile, print status,
+    For a single (z,x,y), iterate over all tiles endpoints, GET the tile, print status,
     and return one record per request.
 
      Parameters
     ----------
         client : httpx.AsyncClient
             The HTTP client to use for requests.
-        tiles_templates : list of str
+        tiles_endpoints : list of str
             A list of URL templates containing ``{z}``, ``{x}``, and ``{y}`` placeholders.
         z : int
             The zoom level of the tile.
@@ -200,7 +203,7 @@ async def fetch_tile(
         - ``z`` (int): zoom level.
         - ``x`` (int): tile x index.
         - ``y`` (int): tile y index.
-        - ``timestep_index`` (int): index of the template within ``tiles_templates``.
+        - ``timestep_index`` (int): index of the template within ``tiles_endpoints``.
         - ``url`` (str): fully formatted request URL.
         - ``status_code`` (int or None): HTTP status code; ``None`` if the request failed.
         - ``elapsed_s`` (float): wall-clock time for the request (seconds).
@@ -209,15 +212,13 @@ async def fetch_tile(
         - ``ok`` (bool): ``True`` if ``status_code == 200``.
         - ``no_data`` (bool): ``True`` iff ``status_code == 204``.
         - ``error_text`` (str or None): short error snippet for non-2xx responses or exceptions.
-        - ``rss_before`` (int or float): process RSS (bytes) before the request (``0``/``NaN`` if unavailable).
-        - ``rss_after`` (int or float): process RSS (bytes) after the request (``0``/``NaN`` if unavailable).
         - ``rss_delta`` (int or float): ``rss_after - rss_before`` (bytes; ``NaN`` on error).
 
 
     """
     rows: List[Dict[str, Any]] = []
 
-    for i, tmpl in enumerate(tiles_templates):
+    for i, tmpl in enumerate(tiles_endpoints):
         tile_url = tmpl.format(z=z, x=x, y=y)
         try:
             rss_before = proc.memory_info().rss if proc is not None else 0
@@ -298,7 +299,7 @@ async def benchmark_titiler_cmr(
     viewport_height: int = TILES_HEIGHT,
     max_connections: int = 20,
     max_connections_per_host: int = 20,
-    **kwargs: Any,
+    **kwargs: Any, # review for kwargs......
     ) -> pd.DataFrame:
     """
     1) GET /timeseries/{tms_id}/tilejson.json to obtain tile templates
@@ -387,12 +388,12 @@ async def benchmark_titiler_cmr(
         ts_json = resp.json()
 
         # find all the templates for all granules....
-        tiles_templates = [tile for v in ts_json.values() for tile in v.get("tiles", [])]
-        if not tiles_templates:
+        tiles_endpoints = [tile for v in ts_json.values() for tile in v.get("tiles", [])]
+        if not tiles_endpoints:
             raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
-        n_timesteps = len(tiles_templates)
+        n_timesteps = len(tiles_endpoints)
         
-        print(f"TileJSON: timesteps={n_timesteps} | Templates={len(tiles_templates)}")
+        print(f"TileJSON: timesteps={n_timesteps} | Templates={len(tiles_endpoints)}")
 
         # 2) build tasks and fetch concurrently
         proc = psutil.Process()
@@ -408,7 +409,7 @@ async def benchmark_titiler_cmr(
                     asyncio.create_task(
                         fetch_tile(
                             client,
-                            tiles_templates=tiles_templates,
+                            tiles_endpoints=tiles_endpoints,
                             z=z,
                             x=x,
                             y=y,
@@ -431,6 +432,7 @@ async def benchmark_titiler_cmr(
         else:
             print(f"Unexpected result type: {type(rows)}")
 
+    # -- TODO: save dataframes
     required_cols = ["z", "y", "x", "timestep_index"]
     df = pd.DataFrame(all_rows)
     if not df.empty and all(col in df.columns for col in required_cols):
@@ -506,6 +508,7 @@ async def check_titiler_cmr_compatibility(
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """
+    [] TODO: Min and Max zoom level....
         Simplified compatibility checker for TiTiler-CMR.
     Works with responses like:
         [
@@ -626,10 +629,10 @@ if __name__ == "__main__":
         variable = "precipitation"
 
         concept_id = "C2723754864-GES_DISC"
-        datetime_range = "2024-10-01T00:00:00Z/2024-10-05T23:59:59Z"
+        #datetime_range = "2024-10-01T00:00:00Z/2024-10-05T23:59:59Z"
 
         concept_id = "C2723754864-GES_DISC"
-        #datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
+        datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
 
         ds_xr = DatasetParams(
             concept_id=concept_id,
@@ -716,6 +719,9 @@ if __name__ == "__main__":
                 "temporal_mode": "point",
             }
         )
+        print("Rasterio example DatasetParams (to_query_params):")
+        for k, v in ds_ri.to_query_params():
+            print(f"  {k}: {v}")
         df_ri = await benchmark_titiler_cmr(
             ds=ds_ri,
             endpoint=endpoint,
