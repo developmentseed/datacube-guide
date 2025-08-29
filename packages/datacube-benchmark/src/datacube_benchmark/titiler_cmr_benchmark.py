@@ -89,6 +89,8 @@ async def fetch_tile(
 
      Parameters
     ----------
+        client : httpx.AsyncClient
+            The HTTP client to use for requests.
         tiles_templates : list of str
             A list of URL templates containing ``{z}``, ``{x}``, and ``{y}`` placeholders.
         z : int
@@ -116,7 +118,7 @@ async def fetch_tile(
         - ``elapsed_s`` (float): wall-clock time for the request (seconds).
         - ``size_bytes`` (int): response body size in bytes (``0`` if no content or on failure).
         - ``content_type`` (str or None): value of the ``Content-Type`` header, if present.
-        - ``ok`` (bool): ``True`` iff ``status_code == 200``.
+        - ``ok`` (bool): ``True`` if ``status_code == 200``.
         - ``no_data`` (bool): ``True`` iff ``status_code == 204``.
         - ``error_text`` (str or None): short error snippet for non-2xx responses or exceptions.
         - ``rss_before`` (int or float): process RSS (bytes) before the request (``0``/``NaN`` if unavailable).
@@ -133,7 +135,7 @@ async def fetch_tile(
             rss_before = proc.memory_info().rss if proc is not None else 0
             t0 = time.perf_counter()
             response = await client.get(tile_url, timeout=timeout_s)
-            elapsed = time.perf_counter() - t0
+            response.elapsed = time.perf_counter() - t0
             rss_after = proc.memory_info().rss if proc is not None else 0
             rss_delta = rss_after - rss_before
 
@@ -154,8 +156,9 @@ async def fetch_tile(
                     "y": y,
                     "timestep_index": i,
                     "url": tile_url,
+                    "response": response, 
                     "status_code": status,
-                    "elapsed_s": elapsed,
+                    "elapsed_s": response.elapsed,
                     "size_bytes": size,
                     "content_type": ctype,
                     "ok": (status == 200),
@@ -176,6 +179,7 @@ async def fetch_tile(
                     "y": y,
                     "timestep_index": i,
                     "url": tile_url,
+                    "response": response,
                     "status_code": None,
                     "elapsed_s": float("nan"),
                     "size_bytes": 0,
@@ -566,25 +570,33 @@ async def check_titiler_cmr_compatibility(
 # ------------------------------
 if __name__ == "__main__":
     async def _run():
+        ## ---------------------------------
+        # Example 1 : Xarray Backend
+        ## ---------------------------------
+
         endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
+        
         min_zoom = 8
         max_zoom = 8
         lng = -92.1
         lat = 46.8
+        
         viewport_width = 5
         viewport_height = 5
+
         step = "P1W"
         temporal_mode = "interval"
+
         tile_format = "png"
 
-        concept_id = "C2723754864-GES_DISC"
-        #datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
         backend = "xarray"
         variable = "precipitation"
 
-        # Overwrite for demo range
         concept_id = "C2723754864-GES_DISC"
         datetime_range = "2024-10-01T00:00:00Z/2024-10-05T23:59:59Z"
+
+        concept_id = "C2723754864-GES_DISC"
+        #datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
 
         # Run compatibility check (concise summary by default)
         result = await check_titiler_cmr_compatibility(
