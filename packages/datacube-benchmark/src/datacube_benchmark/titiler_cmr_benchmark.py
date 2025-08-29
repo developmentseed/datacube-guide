@@ -26,6 +26,96 @@ SUPPORTED_TILE_FORMATS: set[str] = {
     "png", "npy", "tiff", "jpeg", "jpg", "jp2", "webp", "pngraw",
 }
 
+@dataclass
+class DatasetParams:
+    """
+    Parameters needed to request tiles from TiTiler-CMR.
+
+    This class encapsulates the metadata and visualization options needed to build
+    query parameters for tile requests against the TiTiler-CMR API. Depending on the
+    chosen backend (`xarray` or `rasterio`), different fields are required.
+
+    Attributes
+    ----------
+    concept_id : str
+    datetime_range : str
+    backend : str, default="xarray"
+    variable : str, optional
+    bands : Sequence[str], optional
+    bands_regex : str, optional
+    rescale : str, optional
+    colormap_name : str, optional
+    resampling : str, optional
+
+    Methods
+    -------
+    to_query_params() -> List[Tuple[str, str]]
+        Build a list of (key, value) pairs suitable for passing as query parameters
+        to TiTiler-CMR tile endpoints. Validates backend-specific requirements.
+    """
+    concept_id: str
+    datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
+    backend: str = "xarray"  # "xarray" or "rasterio"
+
+    # xarray
+    variable: Optional[str] = None
+
+    # rasterio
+    bands: Optional[Sequence[str]] = None
+    bands_regex: Optional[str] = None
+
+    # optional visualization/processing
+    rescale: Optional[str] = None         # e.g., "0,46"
+    colormap_name: Optional[str] = None   # e.g., "viridis"
+    resampling: Optional[str] = None      # e.g., "nearest"
+
+    def to_query_params(self, **kwargs: Any) -> List[Tuple[str, str]]:
+        """
+        Build query params for Tile endpoints depending on backend and options.
+        """
+        params: List[Tuple[str, str]] = [
+            ("concept_id", self.concept_id),
+            ("datetime", self.datetime_range),
+            ("backend", self.backend),
+        ]
+
+        if self.backend == "xarray":
+            if not self.variable:
+                raise ValueError("For backend='xarray', 'variable' must be provided.")
+            params.append(("variable", self.variable))
+
+        elif self.backend == "rasterio":
+            # guard for None before .strip()
+            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
+                raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
+            for b in self.bands:
+                params.append(("bands", b))
+            params.append(("bands_regex", self.bands_regex))
+
+        else:
+            raise ValueError("backend must be 'xarray' or 'rasterio'")
+
+        if self.rescale:
+            params.append(("rescale", self.rescale))
+        if self.colormap_name:
+            params.append(("colormap_name", self.colormap_name))
+        if self.resampling:
+            params.append(("resampling", self.resampling))
+
+        # -- additional kwargs --
+        for k, v in kwargs.items():
+            if v is None:
+                continue
+            if isinstance(v, bool):
+                params.append((k, "true" if v else "false"))
+            elif isinstance(v, (list, tuple, set)):
+                for item in v:
+                    if item is not None:
+                        params.append((k, str(item)))
+            else:
+                params.append((k, str(v)))
+        return params
+
 
 def get_surrounding_tiles(
     center_x: int,
@@ -196,83 +286,7 @@ async def fetch_tile(
     return rows
 
 
-@dataclass
-class DatasetParams:
-    """
-    Parameters needed to request tiles from TiTiler-CMR.
 
-    This class encapsulates the metadata and visualization options needed to build
-    query parameters for tile requests against the TiTiler-CMR API. Depending on the
-    chosen backend (`xarray` or `rasterio`), different fields are required.
-
-    Attributes
-    ----------
-    concept_id : str
-    datetime_range : str
-    backend : str, default="xarray"
-    variable : str, optional
-    bands : Sequence[str], optional
-    bands_regex : str, optional
-    rescale : str, optional
-    colormap_name : str, optional
-    resampling : str, optional
-
-    Methods
-    -------
-    to_query_params() -> List[Tuple[str, str]]
-        Build a list of (key, value) pairs suitable for passing as query parameters
-        to TiTiler-CMR tile endpoints. Validates backend-specific requirements.
-    """
-    concept_id: str
-    datetime_range: str  # ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z"
-    backend: str = "xarray"  # "xarray" or "rasterio"
-
-    # xarray
-    variable: Optional[str] = None
-
-    # rasterio
-    bands: Optional[Sequence[str]] = None
-    bands_regex: Optional[str] = None
-
-    # optional visualization/processing
-    rescale: Optional[str] = None         # e.g., "0,46"
-    colormap_name: Optional[str] = None   # e.g., "viridis"
-    resampling: Optional[str] = None      # e.g., "nearest"
-
-    def to_query_params(self) -> List[Tuple[str, str]]:
-        """
-        Build query params for Tile endpoints depending on backend and options.
-        """
-        params: List[Tuple[str, str]] = [
-            ("concept_id", self.concept_id),
-            ("datetime", self.datetime_range),
-            ("backend", self.backend),
-        ]
-
-        if self.backend == "xarray":
-            if not self.variable:
-                raise ValueError("For backend='xarray', 'variable' must be provided.")
-            params.append(("variable", self.variable))
-
-        elif self.backend == "rasterio":
-            # guard for None before .strip()
-            if not (self.bands and self.bands_regex and self.bands_regex.strip()):
-                raise ValueError("For backend='rasterio', provide both 'bands' and 'bands_regex'.")
-            for b in self.bands:
-                params.append(("bands", b))
-            params.append(("bands_regex", self.bands_regex))
-
-        else:
-            raise ValueError("backend must be 'xarray' or 'rasterio'")
-
-        if self.rescale:
-            params.append(("rescale", self.rescale))
-        if self.colormap_name:
-            params.append(("colormap_name", self.colormap_name))
-        if self.resampling:
-            params.append(("resampling", self.resampling))
-
-        return params
 
 
 # ------------------------------
@@ -606,14 +620,13 @@ if __name__ == "__main__":
         )
 
         # Access structured results programmatically
-        summary = result  # function already returns the flat summary dict
-        print("Summary object:", summary)
+        print("Summary object:", result)
 
         # Example: decide if you should proceed
-        if summary["n_granules"] == 0:
+        if result["n_granules"] == 0:
             print("No granules available in this date range. Skipping benchmark.")
         else:
-            print(f"Proceeding: {summary['n_granules']} granules found.")
+            print(f"Proceeding: {result['n_granules']} granules found.")
 
         df = await benchmark_titiler_cmr(
             endpoint=endpoint,
@@ -632,10 +645,8 @@ if __name__ == "__main__":
             step=step,
             temporal_mode=temporal_mode,
             tile_format=tile_format,
-            # max_workers defaults to all logical cores; override if you want
-            # max_workers=32,
         )
-        # Show head with pretty columns
+        
         print(df.head())
 
         pd.set_option("display.max_rows", None)
@@ -643,32 +654,26 @@ if __name__ == "__main__":
         pd.set_option("display.width", None)
         pd.set_option("display.max_colwidth", None)
 
-        # Numeric summary first (keeps bytes columns numeric)
-        zoom_summary = df.groupby("z").agg(
+        zoom_summary = (
+            df.groupby("z").agg(
             n_requests=("ok", "size"),
             ok=("ok", "sum"),
             no_data=("no_data", "sum"),
-            median_latency_s=("elapsed_s", "median"),
+            median_latency=("elapsed_s", lambda s: pd.to_numeric(s, errors="coerce").median()),
             p95_latency_s=("elapsed_s", lambda s: pd.to_numeric(s, errors="coerce").quantile(0.95)),
-            median_size_B=("size_bytes", "median"),
-            median_rss_delta_B=("rss_delta", "median"),
-            p95_rss_delta_B=("rss_delta", lambda s: pd.to_numeric(s, errors="coerce").quantile(0.95)),
+            median_size=("size_bytes", lambda s: _fmt_bytes(pd.to_numeric(s, errors="coerce").median())),
+            median_rss_delta=("rss_delta", lambda s: _fmt_bytes(pd.to_numeric(s, errors="coerce").median())),
+            )
+            .sort_index()
         )
-        print("\nSummary by zoom (numeric bytes):")
-        print(zoom_summary)
 
-        # Pretty-printed memory summary (string columns for readability)
-        pretty_summary = zoom_summary.copy()
-        for col in ["median_size_B", "median_rss_delta_B", "p95_rss_delta_B"]:
-            pretty_summary[col.replace("_B", "_h")] = pretty_summary[col].map(_fmt_bytes)
-        print("\nSummary by zoom (human-readable memory):")
-        print(pretty_summary[[
-            "n_requests", "ok", "no_data",
-            "median_latency_s", "p95_latency_s",
-            "median_size_h", "median_rss_delta_h", "p95_rss_delta_h"
-        ]])
+        print("\nSummary by zoom:")
+        print (zoom_summary)
 
-        # Rasterio example
+
+        ## ---------------------------------
+        # Example 2 : Xarray Backend
+        ## ---------------------------------
         concept_id = "C2036881735-POCLOUD"  # HLS L30
         datetime_range = "2024-10-01T00:00:01Z/2024-10-30T00:00:01Z"
 
@@ -692,8 +697,6 @@ if __name__ == "__main__":
             viewport_height=viewport_height,
             step=step,
             temporal_mode="point",
-            # tile_format="point",  # enable if your API expects this for point mode
-            # max_workers=32,
         )
         print("\nRI head:\n", df_ri.head())
 
