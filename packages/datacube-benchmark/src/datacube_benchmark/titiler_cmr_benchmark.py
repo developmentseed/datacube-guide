@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import time
+import psutil
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -18,24 +19,46 @@ from functools import partial
 import httpx
 import morecantile
 import pandas as pd
-import psutil
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
 SUPPORTED_TILE_FORMATS: set[str] = {
-    "png", "npy", "tiff", "jpeg", "jpg", "jp2", "webp", "pngraw",
+    "png",
+    "npy",
+    "tiff",
+    "jpeg",
+    "jpg",
+    "jp2",
+    "webp",
+    "pngraw",
 }
 
-import logging
-from dataclasses import dataclass, field
-
+# ------------------------------
+# Dataclasses
+# ------------------------------
 
 @dataclass
 class DatasetParams:
     """
-    Parameters needed to request tiles from TiTiler-CMR.
+    Encapsulates parameters for requesting tiles from TiTiler-CMR.
 
-    Only concept_id, backend, and datetime_range are required. All other options are passed via kwargs.
+    Required parameters:
+        concept_id (str): CMR concept ID for the dataset.
+        backend (str): Backend type, e.g., "xarray" or "rasterio".
+        datetime_range (str): ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z".
+
+    Optional parameters:
+        kwargs (Dict[str, Any]): Additional query parameters, such as:
+            - variable (str): For xarray backend, the variable name.
+            - bands (Sequence[str]): For rasterio backend, list of bands.
+            - bands_regex (str): For rasterio backend, regex for bands selection.
+            - rescale (str): Rescale range for visualization.
+            - colormap_name (str): Colormap name for visualization.
+            - resampling (str): Resampling method.
+            - step, temporal_mode, minzoom, maxzoom, tile_format, etc.
+
+    Raises:
+        ValueError: If required backend-specific fields are missing or if an unexpected type is encountered in kwargs.
     """
     concept_id: str
     backend: str
@@ -44,7 +67,19 @@ class DatasetParams:
 
     def to_query_params(self, **extra_kwargs: Any) -> List[Tuple[str, str]]:
         """
-        Build query params for Tile endpoints using all kwargs.
+        Build query parameters for TiTiler-CMR tile endpoints.
+
+        Combines required fields and all additional keyword arguments, filtering out None values and converting types as needed.
+        Validates that required backend-specific fields are present in kwargs.
+
+        Args:
+            extra_kwargs: Additional keyword arguments to include as query params.
+
+        Returns:
+            List[Tuple[str, str]]: List of (key, value) pairs for query parameters.
+
+        Raises:
+            ValueError: If required backend-specific fields are missing or if an unexpected type is encountered in kwargs.
         """
         params: List[Tuple[str, str]] = [
             ("concept_id", self.concept_id),
@@ -53,17 +88,30 @@ class DatasetParams:
         ]
         all_kwargs = dict(self.kwargs)
         all_kwargs.update(extra_kwargs)
+
+        # Backend-specific validation
+        if self.backend == "xarray":
+            if not all_kwargs.get("variable"):
+                raise ValueError("For backend='xarray', 'variable' must be provided in kwargs.")
+        elif self.backend == "rasterio":
+            if not (all_kwargs.get("bands") and all_kwargs.get("bands_regex")):
+                raise ValueError("For backend='rasterio', 'bands' and 'bands_regex' must be provided in kwargs.")
+
         for k, v in all_kwargs.items():
             if v is None:
                 continue
             if isinstance(v, bool):
                 params.append((k, "true" if v else "false"))
+            elif isinstance(v, (int, float)):
+                params.append((k, str(v)))
             elif isinstance(v, (list, tuple, set)):
                 for item in v:
                     if item is not None:
                         params.append((k, str(item)))
+            elif isinstance(v, str):
+                params.append((k, v))
             else:
-                params.append((k, str(v)))
+                print(f"Unexpected type for param '{k}': {type(v)}. Value: {v}")
         return params
 
 
@@ -204,8 +252,6 @@ async def fetch_tile(
                     "ok": (status == 200),
                     "no_data": (status == 204),
                     "error_text": None if status < 400 else response.text[:400],
-                    "rss_before": rss_before,
-                    "rss_after": rss_after,
                     "rss_delta": rss_delta,
                 }
             )
@@ -227,58 +273,82 @@ async def fetch_tile(
                     "ok": False,
                     "no_data": False,
                     "error_text": f"{type(ex).__name__}: {ex}",
-                    "rss_before": float("nan"),
-                    "rss_after": float("nan"),
                     "rss_delta": float("nan"),
                 }
             )
 
     return rows
 
-
-
-
-
 # ------------------------------
 # Timeseries-only benchmark (async wrapper)
 # ------------------------------
 async def benchmark_titiler_cmr(
     endpoint: str,
-    concept_id: str,
-    datetime_range: str,
+    ds: DatasetParams,
     *,
-    backend: str = "xarray",
-    variable: Optional[str] = None,
-    bands: Optional[Sequence[str]] = None,
-    bands_regex: Optional[str] = None,
-    # ------ titiler-cmr params ------
     tms_id: str = "WebMercatorQuad",
     tile_format: str = "png",
     tile_scale: int = 1,
     min_zoom: int = 7,
     max_zoom: int = 10,
-    rescale: Optional[str] = None,
-    colormap_name: Optional[str] = "viridis",
-    resampling: Optional[str] = None,
-    # ---  
     lng: float = -92.1,
     lat: float = 46.8,
     timeout_s: float = 30.0,
-    viewport_width: int = 5,
-    viewport_height: int = 5,
-    # timeseries specifics:
-    step: str = "P1W",
-    temporal_mode: str = "interval",
-    # httpx concurrency limits (tune as needed)
-    max_connections: int = 100,
+    viewport_width: int = TILES_WIDTH,
+    viewport_height: int = TILES_HEIGHT,
+    max_connections: int = 20,
     max_connections_per_host: int = 20,
     **kwargs: Any,
-
-) -> pd.DataFrame:
+    ) -> pd.DataFrame:
     """
     1) GET /timeseries/{tms_id}/tilejson.json to obtain tile templates
     2) For each zoom & viewport tile, run fetch_tile(...) over all templates using a shared AsyncClient
     3) Return a tidy DataFrame with one row per request
+
+
+    Parameters
+    ----------
+    endpoint : str
+        Base URL of the TiTiler-CMR API (e.g., ``"https://.../api/titiler-cmr"``).
+    concept_id : str
+        CMR concept ID of the dataset to benchmark.
+    datetime_range : str
+        ISO8601 interval specifying the temporal subset (e.g., ``"2024-10-01T00:00Z/2024-10-05T23:59Z"``).
+    backend : {"xarray", "rasterio"}, default="xarray"
+        Backend used by TiTiler-CMR for rendering.
+    variable : str, optional
+        For the ``xarray`` backend, the variable name to render.
+    bands : sequence of str, optional
+        For the ``rasterio`` backend, list of bands to request.
+    bands_regex : str, optional
+        Regex pattern for selecting rasterio bands.
+    tms_id : str, default="WebMercatorQuad"
+        Tile matrix set identifier (passed to TiTiler-CMR).
+    tile_format : str, default="png"
+        Tile format to request. Must be one of SUPPORTED_TILE_FORMATS.
+    tile_scale : int, default=1
+        Tile scale factor (resolution multiplier).
+    min_zoom, max_zoom : int, default=7 and 10
+        Minimum and maximum zoom levels to benchmark.
+    lng, lat : float, default=-92.1, 46.8
+        Longitude/latitude of the viewport center.
+    timeout_s : float, default=30.0
+        Timeout (seconds) for each HTTP request.
+    viewport_width, viewport_height : int, default=TILES_WIDTH, TILES_HEIGHT
+        Size of the tile viewport around the center tile.
+    rescale : str, optional
+        Rescaling range for visualization (e.g., ``"0,1"``).
+    colormap_name : str, default="viridis"
+        Colormap for rendering tiles.
+    resampling : str, optional
+        Resampling method used by TiTiler-CMR.
+    max_connections : int, default=20
+        Maximum concurrent HTTP connections.
+    max_connections_per_host : int, default=20
+        Maximum concurrent connections per host.
+    **kwargs : dict
+        Additional parameters passed through to TiTiler-CMR query string.
+
     """
     print(
         f"System: {psutil.cpu_count(logical=False)} physical / "
@@ -292,29 +362,14 @@ async def benchmark_titiler_cmr(
             f"Supported: {sorted(SUPPORTED_TILE_FORMATS)}"
         )
 
-    # Build query params (list of tuples to preserve duplicates like multiple 'bands')
-    ds = DatasetParams(
-        concept_id=concept_id,
-        backend=backend,
-        datetime_range=datetime_range,
-        kwargs={
-            "variable": variable,
-            "bands": bands,
-            "bands_regex": bands_regex,
-            "rescale": rescale,
-            "colormap_name": colormap_name,
-            "resampling": resampling,
-            "step": step,
-            "temporal_mode": temporal_mode,
-            "minzoom": str(min_zoom),
-            "maxzoom": str(max_zoom),
-            "tile_format": tile_format,
-            **kwargs,
-        }
+    # Add/override tile_format, minzoom, maxzoom in ds.kwargs
+    params: List[Tuple[str, str]] = ds.to_query_params(
+        tile_format=tile_format,
+        tile_scale=tile_scale,
+        **kwargs,
     )
-    params: List[Tuple[str, str]] = ds.to_query_params()
 
-    print("----------")
+    print("---------- Query Params ----------")
     print(*params, sep="\n")
 
     # 1) fetch TileJSON with a short-lived sync call (fine), or use AsyncClient too:
@@ -327,18 +382,19 @@ async def benchmark_titiler_cmr(
         max_keepalive_connections=max_connections_per_host,
     )
     async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
-        r = await client.get(ts_url, params=params)
-        #r.raise_for_status()
-        ts_json = r.json()
+        resp = await client.get(ts_url, params=params)
+        #resp.raise_for_status()
+        ts_json = resp.json()
 
+        # find all the templates for all granules....
         tiles_templates = [tile for v in ts_json.values() for tile in v.get("tiles", [])]
         if not tiles_templates:
             raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
         n_timesteps = len(tiles_templates)
         
-        print(f"TileJSON: timesteps={n_timesteps} | templates={len(tiles_templates)}")
+        print(f"TileJSON: timesteps={n_timesteps} | Templates={len(tiles_templates)}")
 
-        # 2) build tasks and fetch concurrently with the SAME client
+        # 2) build tasks and fetch concurrently
         proc = psutil.Process()
 
         tasks: List[asyncio.Task] = []
@@ -387,7 +443,6 @@ async def benchmark_titiler_cmr(
             pass
     else:
         print(f"Warning: DataFrame is empty or missing columns: {required_cols}")
-
     return df
 
 
@@ -419,6 +474,23 @@ def _max_tile_index(z: int) -> int:
 
     At zoom level `z`, the map is subdivided into 2**z tiles along each axis
     (x and y). The valid tile indices therefore range from 0 to (2**z - 1).
+    This helper returns the maximum valid index for both axes.
+
+    Parameters
+    ----------
+    z : int
+        Zoom level (must be greater than or equal to 0).
+
+    Returns
+    -------
+    int
+        The maximum valid tile index at zoom ``z``
+        (i.e., ``2**z - 1``).
+
+    Raises
+    ------
+    ValueError
+        If `z` is negative.
     """
     if z < 0:
         raise ValueError("zoom must be >= 0")
@@ -427,8 +499,7 @@ def _max_tile_index(z: int) -> int:
 
 async def check_titiler_cmr_compatibility(
     endpoint: str,
-    concept_id: str,
-    datetime_range: str,
+    ds: DatasetParams,
     *,
     timeout_s: float = 60.0,
     include_datetimes: bool = False,
@@ -450,14 +521,11 @@ async def check_titiler_cmr_compatibility(
 
     Parameters
     ----------
-    endpoint : str
-        Base URL of the TiTiler-CMR API.
-    concept_id : str
-        CMR Concept ID of the dataset.
-    datetime_range : str
-        ISO8601 interval specifying the desired temporal range.
-    timeout_s : float, optional
-        Request timeout in seconds. Default = 60.0.
+    ds: DatasetParams,
+    endpoint: str,
+    timeout_s: float = 60.0,
+    include_datetimes: bool = False,
+    ) -> Dict[str, Any]:
     include_datetimes : bool, optional
         If True, also returns the full sorted list of granule datetimes.
     **kwargs : Any
@@ -484,8 +552,8 @@ async def check_titiler_cmr_compatibility(
             }
     """
     url = f"{endpoint.rstrip('/')}/timeseries"
-    params: Dict[str, Any] = {"concept_id": concept_id, "datetime": datetime_range}
-    params.update(kwargs or {})
+    # Use DatasetParams to build params
+    params = dict(ds.to_query_params())
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         resp = await client.get(url, params=params)
@@ -493,7 +561,7 @@ async def check_titiler_cmr_compatibility(
             payload = resp.json()
         except Exception:
             summary = {
-                "concept_id": concept_id,
+                "concept_id": ds.concept_id,
                 "n_granules": 0,
                 "start_time": None,
                 "end_time": None,
@@ -519,7 +587,7 @@ async def check_titiler_cmr_compatibility(
 
     # Build summary
     summary = {
-        "concept_id": concept_id,
+        "concept_id": ds.concept_id,
         "n_granules": len(times),
         "start_time": times[0] if times else None,
         "end_time": times[-1] if times else None,
@@ -529,7 +597,6 @@ async def check_titiler_cmr_compatibility(
         summary["granule_datetimes"] = times
 
     return summary
-
 
 # ------------------------------
 # Example
@@ -543,7 +610,7 @@ if __name__ == "__main__":
         endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
         
         min_zoom = 8
-        max_zoom = 8
+        max_zoom = 9
         lng = -92.1
         lat = 46.8
         
@@ -564,11 +631,21 @@ if __name__ == "__main__":
         concept_id = "C2723754864-GES_DISC"
         #datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
 
-        # Run compatibility check (concise summary by default)
-        result = await check_titiler_cmr_compatibility(
-            endpoint=endpoint,
+        ds_xr = DatasetParams(
             concept_id=concept_id,
+            backend=backend,
             datetime_range=datetime_range,
+            kwargs={
+                "variable": variable,
+                "rescale": "0,1",
+                "colormap_name": "gnbu",
+                "step": step,
+                "temporal_mode": temporal_mode,
+            }
+        )
+        result = await check_titiler_cmr_compatibility(
+            ds=ds_xr,
+            endpoint=endpoint,
         )
 
         # Access structured results programmatically
@@ -581,22 +658,16 @@ if __name__ == "__main__":
             print(f"Proceeding: {result['n_granules']} granules found.")
 
         df = await benchmark_titiler_cmr(
+            ds=ds_xr,
             endpoint=endpoint,
-            concept_id=concept_id,
-            datetime_range=datetime_range,
-            backend=backend,
-            variable=variable,
-            rescale="0,1",
-            colormap_name="gnbu",
+            tms_id="WebMercatorQuad",
+            tile_format=tile_format,
             min_zoom=min_zoom,
             max_zoom=max_zoom,
             lng=lng,
             lat=lat,
             viewport_width=viewport_width,
             viewport_height=viewport_height,
-            step=step,
-            temporal_mode=temporal_mode,
-            tile_format=tile_format,
         )
         
         print(df.head())
@@ -624,7 +695,7 @@ if __name__ == "__main__":
 
 
         ## ---------------------------------
-        # Example 2 : Xarray Backend
+        # Example 2 : Rasterio Backend
         ## ---------------------------------
         concept_id = "C2036881735-POCLOUD"  # HLS L30
         datetime_range = "2024-10-01T00:00:01Z/2024-10-30T00:00:01Z"
@@ -633,22 +704,28 @@ if __name__ == "__main__":
         bands = ["B04", "B03", "B02"]
         bands_regex = "B[0-9][0-9]"
 
-        df_ri = await benchmark_titiler_cmr(
-            endpoint=endpoint,
+        ds_ri = DatasetParams(
             concept_id=concept_id,
-            datetime_range=datetime_range,
             backend=backend,
-            bands=bands,
-            bands_regex=bands_regex,
-            colormap_name="gnbu",
+            datetime_range=datetime_range,
+            kwargs={
+                "bands": bands,
+                "bands_regex": bands_regex,
+                "colormap_name": "gnbu",
+                "step": step,
+                "temporal_mode": "point",
+            }
+        )
+        df_ri = await benchmark_titiler_cmr(
+            ds=ds_ri,
+            endpoint=endpoint,
+            tms_id="WebMercatorQuad",
             min_zoom=min_zoom,
             max_zoom=max_zoom,
             lng=lng,
             lat=lat,
             viewport_width=viewport_width,
             viewport_height=viewport_height,
-            step=step,
-            temporal_mode="point",
         )
         print("\nRI head:\n", df_ri.head())
 
