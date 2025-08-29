@@ -4,7 +4,6 @@ Benchmarking utility for TiTiler-CMR.
 This module provides tools to evaluate the performance of the
 TiTiler-CMR API for geospatial tile rendering across multiple zoom levels.
 
-TODO: Remove memory profiling (lambda function....)
 """
 
 from __future__ import annotations
@@ -15,8 +14,6 @@ import psutil
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 
 from tiling import get_surrounding_tiles, fetch_tile
 
@@ -37,86 +34,8 @@ SUPPORTED_TILE_FORMATS: set[str] = {
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
-# ------------------------------
-# Dataclasses
-# ------------------------------
 
-@dataclass
-class DatasetParams:
-    """
-    Encapsulates parameters for requesting tiles from TiTiler-CMR.
 
-    Required parameters:
-        concept_id (str): CMR concept ID for the dataset.
-        backend (str): Backend type, e.g., "xarray" or "rasterio".
-        datetime_range (str): ISO8601 interval, e.g., "2024-10-01T00:00:01Z/2024-10-10T00:00:01Z".
-
-    Optional parameters:
-        kwargs (Dict[str, Any]): Additional query parameters, such as:
-            - variable (str): For xarray backend, the variable name.
-            - bands (Sequence[str]): For rasterio backend, list of bands.
-            - bands_regex (str): For rasterio backend, regex for bands selection.
-            - rescale (str): Rescale range for visualization.
-            - colormap_name (str): Colormap name for visualization.
-            - resampling (str): Resampling method.
-            - step, temporal_mode, minzoom, maxzoom, tile_format, etc.
-
-    Raises:
-        ValueError: If required backend-specific fields are missing or if an unexpected type is encountered in kwargs.
-    """
-    concept_id: str
-    backend: str
-    datetime_range: str
-    kwargs: Dict[str, Any] = field(default_factory=dict)
-
-    def to_query_params(self, **extra_kwargs: Any) -> List[Tuple[str, str]]:
-        """
-        Build query parameters for TiTiler-CMR tile endpoints.
-
-        Combines required fields and all additional keyword arguments, filtering out None values and converting types as needed.
-        Validates that required backend-specific fields are present in kwargs.
-
-        Args:
-            extra_kwargs: Additional keyword arguments to include as query params.
-
-        Returns:
-            List[Tuple[str, str]]: List of (key, value) pairs for query parameters.
-
-        Raises:
-            ValueError: If required backend-specific fields are missing or if an unexpected type is encountered in kwargs.
-        """
-        params: List[Tuple[str, str]] = [
-            ("concept_id", self.concept_id),
-            ("backend", self.backend),
-            ("datetime", self.datetime_range),
-        ]
-        all_kwargs = dict(self.kwargs)
-        all_kwargs.update(extra_kwargs)
-
-        # Backend-specific validation
-        if self.backend == "xarray":
-            if not all_kwargs.get("variable"):
-                raise ValueError("For backend='xarray', 'variable' must be provided in kwargs.")
-        elif self.backend == "rasterio":
-            if not (all_kwargs.get("bands") and all_kwargs.get("bands_regex")):
-                raise ValueError("For backend='rasterio', 'bands' and 'bands_regex' must be provided in kwargs.")
-
-        for k, v in all_kwargs.items():
-            if v is None:
-                continue
-            if isinstance(v, bool):
-                params.append((k, "true" if v else "false"))
-            elif isinstance(v, (int, float)):
-                params.append((k, str(v)))
-            elif isinstance(v, (list, tuple, set)):
-                for item in v:
-                    if item is not None:
-                        params.append((k, str(item)))
-            elif isinstance(v, str):
-                params.append((k, v))
-            else:
-                print(f"Unexpected type for param '{k}': {type(v)}. Value: {v}")
-        return params
 
 # ------------------------------
 # Timeseries-only benchmark (async wrapper)
@@ -130,6 +49,7 @@ async def benchmark_titiler_cmr(
     tile_scale: int = 1,
     min_zoom: int = 7,
     max_zoom: int = 10,
+    # -- viewport params
     lng: float = -92.1,
     lat: float = 46.8,
     timeout_s: float = 30.0,
@@ -137,32 +57,25 @@ async def benchmark_titiler_cmr(
     viewport_height: int = TILES_HEIGHT,
     max_connections: int = 20,
     max_connections_per_host: int = 20,
-    **kwargs: Any, # review for kwargs......
+    **kwargs: Any, 
+    # TODO: review for kwargs......
     ) -> pd.DataFrame:
     """
-    1) GET /timeseries/{tms_id}/tilejson.json to obtain tile templates
-    2) For each zoom & viewport tile, run fetch_tile(...) over all templates using a shared AsyncClient
-    3) Return a tidy DataFrame with one row per request
+    Benchmark tile rendering performance for TiTiler-CMR.
 
+    Steps:
+        1. GET TileJson from /timeseries/{tms_id}/tilejson.json to obtain all valid tile endpoints.
+        2. For each zoom & viewport tile, run fetch_tile(...) over all endpoints.
+        3. Return a tidy DataFrame with one row per request.
 
     Parameters
     ----------
     endpoint : str
-        Base URL of the TiTiler-CMR API (e.g., ``"https://.../api/titiler-cmr"``).
-    concept_id : str
-        CMR concept ID of the dataset to benchmark.
-    datetime_range : str
-        ISO8601 interval specifying the temporal subset (e.g., ``"2024-10-01T00:00Z/2024-10-05T23:59Z"``).
-    backend : {"xarray", "rasterio"}, default="xarray"
-        Backend used by TiTiler-CMR for rendering.
-    variable : str, optional
-        For the ``xarray`` backend, the variable name to render.
-    bands : sequence of str, optional
-        For the ``rasterio`` backend, list of bands to request.
-    bands_regex : str, optional
-        Regex pattern for selecting rasterio bands.
+        Base URL of the TiTiler-CMR API (e.g., "https://.../api/titiler-cmr").
+    ds : DatasetParams
+        Dataset and query parameters (concept_id, backend, datetime_range, kwargs).
     tms_id : str, default="WebMercatorQuad"
-        Tile matrix set identifier (passed to TiTiler-CMR).
+        Tile matrix set identifier.
     tile_format : str, default="png"
         Tile format to request. Must be one of SUPPORTED_TILE_FORMATS.
     tile_scale : int, default=1
@@ -175,12 +88,6 @@ async def benchmark_titiler_cmr(
         Timeout (seconds) for each HTTP request.
     viewport_width, viewport_height : int, default=TILES_WIDTH, TILES_HEIGHT
         Size of the tile viewport around the center tile.
-    rescale : str, optional
-        Rescaling range for visualization (e.g., ``"0,1"``).
-    colormap_name : str, default="viridis"
-        Colormap for rendering tiles.
-    resampling : str, optional
-        Resampling method used by TiTiler-CMR.
     max_connections : int, default=20
         Maximum concurrent HTTP connections.
     max_connections_per_host : int, default=20
@@ -188,6 +95,10 @@ async def benchmark_titiler_cmr(
     **kwargs : dict
         Additional parameters passed through to TiTiler-CMR query string.
 
+    Returns
+    -------
+    pd.DataFrame
+        Results for each tile request.
     """
     print(
         f"System: {psutil.cpu_count(logical=False)} physical / "
@@ -208,18 +119,19 @@ async def benchmark_titiler_cmr(
         **kwargs,
     )
 
-    print("---------- Query Params ----------")
-    print(*params, sep="\n")
-
-    # 1) fetch TileJSON with a short-lived sync call (fine), or use AsyncClient too:
-    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
-    tms = morecantile.tms.get(tms_id)
-
     # Use AsyncClient for consistency
     limits = httpx.Limits(
         max_connections=max_connections,
         max_keepalive_connections=max_connections_per_host,
     )
+
+    print("---------- Query Params ----------")
+    print(*params, sep="\n")
+
+    # 1) fetch TileJSON wto get all the valid tile endpoints along the datetime_range
+    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
+    tms = morecantile.tms.get(tms_id)
+
     async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
         resp = await client.get(ts_url, params=params)
         #resp.raise_for_status()
