@@ -15,7 +15,7 @@ import psutil
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from tiling import get_surrounding_tiles, fetch_tile
+from tiling import get_surrounding_tiles, fetch_tile, DatasetParams
 
 import httpx
 import morecantile
@@ -128,11 +128,13 @@ async def benchmark_titiler_cmr(
     print("---------- Query Params ----------")
     print(*params, sep="\n")
 
-    # 1) fetch TileJSON wto get all the valid tile endpoints along the datetime_range
-    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
-    tms = morecantile.tms.get(tms_id)
+
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
+        # 1) fetch TileJSON wto get all the valid tile endpoints along the datetime_range
+        ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
+        tms = morecantile.tms.get(tms_id)
+        
         resp = await client.get(ts_url, params=params)
         #resp.raise_for_status()
         ts_json = resp.json()
