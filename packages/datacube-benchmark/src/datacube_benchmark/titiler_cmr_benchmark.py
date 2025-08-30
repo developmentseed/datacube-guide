@@ -1,3 +1,4 @@
+
 """
 Benchmarking utility for TiTiler-CMR.
 
@@ -21,24 +22,80 @@ import httpx
 import morecantile
 import pandas as pd
 
-SUPPORTED_TILE_FORMATS: set[str] = {
-    "png",
-    "npy",
-    "tiff",
-    "jpeg",
-    "jpg",
-    "jp2",
-    "webp",
-    "pngraw",
-}
+
 
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
 
 
 
+
+async def get_tilejson_info(
+    client: httpx.AsyncClient,
+    endpoint: str,
+    tms_id: str,
+    params: list[tuple[str, str]],
+    *,
+    timeout_s: float = 30.0,
+    ) -> dict:
+    """
+    Query TiTiler-CMR timeseries TileJSON and return parsed entries
+    as a list of dictionaries + raw JSON.
+
+    Parameters
+    ----------
+    client : httpx.AsyncClient
+        An active HTTPX async client (connection pool reused).
+    endpoint : str
+        Base URL of the TiTiler-CMR API.
+    tms_id : str
+        Tile matrix set identifier (e.g., "WebMercatorQuad").
+    params : list of tuple
+        Query parameters for the request.
+    timeout_s : float, default=30.0
+        Timeout for the request.
+
+    Returns
+    -------
+    dict
+        {
+          "entries": [list of per-timestep dicts],
+          "tilejson": raw JSON response
+        }
+    """
+    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
+    resp = await client.get(ts_url, params=params, timeout=timeout_s)
+    resp.raise_for_status()
+
+    ts_json = resp.json()
+
+    # Direct loop instead of parse_tilejson_timeseries
+    entries: list[dict] = []
+    for ts, v in ts_json.items():
+        if isinstance(v, dict):
+            entries.append({
+                "timestamp": ts,
+                "tilejson": v.get("tilejson"),
+                "version": v.get("version"),
+                "scheme": v.get("scheme"),
+                "tiles": v.get("tiles", []),
+                "minzoom": v.get("minzoom"),
+                "maxzoom": v.get("maxzoom"),
+                "bounds": v.get("bounds"),
+                "center": v.get("center"),
+            })
+
+    if not any(e["tiles"] for e in entries):
+        raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
+
+    return {"entries": entries, "tilejson": ts_json}
+
+
+
+
 # ------------------------------
 # Timeseries-only benchmark (async wrapper)
+# Benchmark a viewport
 # ------------------------------
 async def benchmark_titiler_cmr(
     endpoint: str,
@@ -49,19 +106,21 @@ async def benchmark_titiler_cmr(
     tile_scale: int = 1,
     min_zoom: int = 7,
     max_zoom: int = 10,
+
     # -- viewport params
-    lng: float = -92.1,
-    lat: float = 46.8,
-    timeout_s: float = 30.0,
+    lng: float,
+    lat: float,
     viewport_width: int = TILES_WIDTH,
     viewport_height: int = TILES_HEIGHT,
+    # -- 
+    timeout_s: float = 30.0,
     max_connections: int = 20,
     max_connections_per_host: int = 20,
     **kwargs: Any, 
     # TODO: review for kwargs......
     ) -> pd.DataFrame:
     """
-    Benchmark tile rendering performance for TiTiler-CMR.
+    Benchmark tile rendering performance for TiTiler-CMR for a viewport.
 
     Steps:
         1. GET TileJson from /timeseries/{tms_id}/tilejson.json to obtain all valid tile endpoints.
@@ -101,16 +160,10 @@ async def benchmark_titiler_cmr(
         Results for each tile request.
     """
     print(
-        f"System: {psutil.cpu_count(logical=False)} physical / "
+        f"Client-side: {psutil.cpu_count(logical=False)} physical / "
         f"{psutil.cpu_count(logical=True)} logical cores | "
         f"RAM: {_fmt_bytes(psutil.virtual_memory().total)}"
     )
-
-    if tile_format not in SUPPORTED_TILE_FORMATS:
-        raise ValueError(
-            f"Unsupported tile_format '{tile_format}'. "
-            f"Supported: {sorted(SUPPORTED_TILE_FORMATS)}"
-        )
 
     # Add/override tile_format, minzoom, maxzoom in ds.kwargs
     params: List[Tuple[str, str]] = ds.to_query_params(
@@ -118,6 +171,12 @@ async def benchmark_titiler_cmr(
         tile_scale=tile_scale,
         **kwargs,
     )
+
+    # 1) Query Timeseries EndPoint for TileJSON info (entries + templates)
+    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
+    tms = morecantile.tms.get(tms_id)
+    
+    
 
     # Use AsyncClient for consistency
     limits = httpx.Limits(
@@ -134,13 +193,14 @@ async def benchmark_titiler_cmr(
         # 1) fetch TileJSON wto get all the valid tile endpoints along the datetime_range
         ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
         tms = morecantile.tms.get(tms_id)
-        
+
         resp = await client.get(ts_url, params=params)
         #resp.raise_for_status()
         ts_json = resp.json()
+        results = await get_tilejson_info(client, endpoint, tms_id, params)
 
         # find all the templates for all granules....
-        tiles_endpoints = [tile for v in ts_json.values() for tile in v.get("tiles", [])]
+        tiles_endpoints = [tile for entry in results.get("entries", []) for tile in entry.get("tiles", [])]
         if not tiles_endpoints:
             raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
         n_timesteps = len(tiles_endpoints)
