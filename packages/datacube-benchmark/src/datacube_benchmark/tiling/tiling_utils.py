@@ -13,6 +13,9 @@ Functions
     Compute the list of (x, y) tile coordinates forming a rectangular
     viewport centered on a given tile index at a specific zoom level.
 
+- get_tileset_tiles:
+    Get all tiles for a complete zoom level within geographic bounds.
+
 - fetch_tile:
     Asynchronously fetch one or more tiles from a set of TileJSON
     templates for a given (z, x, y). Returns structured metadata for
@@ -72,6 +75,42 @@ def get_surrounding_tiles(
             y_valid = max(0, min(y_pos, max_tile))
             tiles.append((x_valid, y_valid))
     return tiles
+
+def get_tileset_tiles(
+    bounds: List[float], 
+    zoom: int, 
+    tms: morecantile.TileMatrixSet
+) -> List[Tuple[int, int]]:
+    """
+    Get all tiles for a complete zoom level within bounds.
+    
+    Parameters
+    ----------
+    bounds : List[float]
+        Bounding box [minx, miny, maxx, maxy] in CRS coordinates
+    zoom : int
+        Zoom level
+    tms : morecantile.TileMatrixSet
+        Tile matrix set
+        
+    Returns
+    -------
+    List[Tuple[int, int]]
+        List of (x, y) tile coordinates
+    """
+    minx, miny, maxx, maxy = bounds
+    
+    # Get tile bounds for the bbox
+    ul_tile = tms.tile(minx, maxy, zoom)  # upper left
+    lr_tile = tms.tile(maxx, miny, zoom)  # lower right
+    
+    tiles = []
+    for x in range(ul_tile.x, lr_tile.x + 1):
+        for y in range(ul_tile.y, lr_tile.y + 1):
+            tiles.append((x, y))
+    
+    return tiles
+
 
 async def fetch_tile(
     client: httpx.AsyncClient,
@@ -194,6 +233,9 @@ async def fetch_tile(
             )
 
     return rows
+
+
+
 
 def _max_tile_index(z: int) -> int:
     """

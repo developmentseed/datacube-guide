@@ -60,7 +60,9 @@ async def get_tilejson_info(
     dict
         {
           "entries": [list of per-timestep dicts],
-          "tilejson": raw JSON response
+          "tilejson": raw JSON response,
+          "tiles_endpoints": flattened list of all tile endpoints,
+          "bounds": geographic bounds from first entry (if available)
         }
     """
     ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
@@ -68,9 +70,8 @@ async def get_tilejson_info(
     resp.raise_for_status()
 
     ts_json = resp.json()
-
-    # Direct loop instead of parse_tilejson_timeseries
     entries: list[dict] = []
+    
     for ts, v in ts_json.items():
         if isinstance(v, dict):
             entries.append({
@@ -85,12 +86,21 @@ async def get_tilejson_info(
                 "center": v.get("center"),
             })
 
-    if not any(e["tiles"] for e in entries):
+    tiles_endpoints = [tile for entry in entries for tile in entry.get("tiles", [])]
+    if not tiles_endpoints:
         raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
+    
+    # Extract bounds from first entry if available
+    bounds = None
+    if entries and entries[0].get("bounds"):
+        bounds = entries[0]["bounds"]
 
-    return {"entries": entries, "tilejson": ts_json}
-
-
+    return {
+        "entries": entries, 
+        "tilejson": ts_json, 
+        "tiles_endpoints": tiles_endpoints,
+        "bounds": bounds
+    }
 
 
 # ------------------------------
@@ -187,25 +197,22 @@ async def benchmark_titiler_cmr(
     print("---------- Query Params ----------")
     print(*params, sep="\n")
 
-
+    tms = morecantile.tms.get(tms_id)
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
-        # 1) fetch TileJSON wto get all the valid tile endpoints along the datetime_range
-        ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
-        tms = morecantile.tms.get(tms_id)
 
-        resp = await client.get(ts_url, params=params)
-        #resp.raise_for_status()
-        ts_json = resp.json()
-        results = await get_tilejson_info(client, endpoint, tms_id, params)
-
+        print (endpoint)
+        tilejson_info = await get_tilejson_info(client, endpoint, tms_id, params)
         # find all the templates for all granules....
-        tiles_endpoints = [tile for entry in results.get("entries", []) for tile in entry.get("tiles", [])]
+        tiles_endpoints = [tile for entry in tilejson_info.get("entries", []) for tile in entry.get("tiles", [])]
+        print ('~~~~~~~~~~~~~~~~~~~~~~~~')
+        print('\n'.join(tiles_endpoints))
         if not tiles_endpoints:
             raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
         n_timesteps = len(tiles_endpoints)
         
         print(f"TileJSON: timesteps={n_timesteps} | Templates={len(tiles_endpoints)}")
+        #print(f"Total tile requests: {len(tile_coords)} tiles × {n_timesteps} timesteps = {len(tile_coords) * n_timesteps}")
 
         # 2) build tasks and fetch concurrently
         proc = psutil.Process()
@@ -402,7 +409,6 @@ if __name__ == "__main__":
         max_zoom = 9
         lng = -92.1
         lat = 46.8
-        
         viewport_width = 5
         viewport_height = 5
 
@@ -416,8 +422,6 @@ if __name__ == "__main__":
 
         concept_id = "C2723754864-GES_DISC"
         #datetime_range = "2024-10-01T00:00:00Z/2024-10-05T23:59:59Z"
-
-        concept_id = "C2723754864-GES_DISC"
         datetime_range = "2024-10-12T00:00:00Z/2024-11-13T00:00:00Z"
 
         ds_xr = DatasetParams(

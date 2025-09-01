@@ -10,7 +10,7 @@ Currently provides:
 from the tiling_utils module.
 """
 
-from .tiling_utils import get_surrounding_tiles, fetch_tile
+from .tiling_utils import get_surrounding_tiles, fetch_tile, get_tileset_tiles 
 from .titiler_cmr_params import DatasetParams
 
-__all__ = ["get_surrounding_tiles", "fetch_tile", "DatasetParams"]
+__all__ = ["get_surrounding_tiles",  "get_tileset_tiles", "fetch_tile", "DatasetParams"]
