@@ -23,10 +23,8 @@ import morecantile
 import pandas as pd
 
 
-
 TILES_WIDTH = 5
 TILES_HEIGHT = 5
-
 
 
 
@@ -41,6 +39,7 @@ async def get_tilejson_info(
     """
     Query TiTiler-CMR timeseries TileJSON and return parsed entries
     as a list of dictionaries + raw JSON.
+
 
     Parameters
     ----------
@@ -169,11 +168,8 @@ async def benchmark_titiler_cmr(
     pd.DataFrame
         Results for each tile request.
     """
-    print(
-        f"Client-side: {psutil.cpu_count(logical=False)} physical / "
-        f"{psutil.cpu_count(logical=True)} logical cores | "
-        f"RAM: {_fmt_bytes(psutil.virtual_memory().total)}"
-    )
+    _print_system_info()
+
 
     # Add/override tile_format, minzoom, maxzoom in ds.kwargs
     params: List[Tuple[str, str]] = ds.to_query_params(
@@ -181,37 +177,24 @@ async def benchmark_titiler_cmr(
         tile_scale=tile_scale,
         **kwargs,
     )
-
-    # 1) Query Timeseries EndPoint for TileJSON info (entries + templates)
-    ts_url = f"{endpoint.rstrip('/')}/timeseries/{tms_id}/tilejson.json"
-    tms = morecantile.tms.get(tms_id)
-    
-    
-
-    # Use AsyncClient for consistency
-    limits = httpx.Limits(
-        max_connections=max_connections,
-        max_keepalive_connections=max_connections_per_host,
-    )
-
     print("---------- Query Params ----------")
     print(*params, sep="\n")
 
     tms = morecantile.tms.get(tms_id)
 
-    async with httpx.AsyncClient(limits=limits, timeout=timeout_s) as client:
+    async with _create_http_client(timeout_s, max_connections, max_connections_per_host) as client:
 
-        print (endpoint)
+        # 1) Query Timeseries EndPoint for TileJSON info (entries + endpoint)
         tilejson_info = await get_tilejson_info(client, endpoint, tms_id, params)
-        # find all the templates for all granules....
+        # find all the endpoints for all granules....
         tiles_endpoints = [tile for entry in tilejson_info.get("entries", []) for tile in entry.get("tiles", [])]
         print ('~~~~~~~~~~~~~~~~~~~~~~~~')
         print('\n'.join(tiles_endpoints))
         if not tiles_endpoints:
-            raise RuntimeError("No 'tiles' templates found in timeseries TileJSON response.")
+            raise RuntimeError("No 'tiles' endpoints found in timeseries TileJSON response.")
         n_timesteps = len(tiles_endpoints)
-        
-        print(f"TileJSON: timesteps={n_timesteps} | Templates={len(tiles_endpoints)}")
+
+        print(f"TileJSON: timesteps={n_timesteps} | Endpoints={len(tiles_endpoints)}")
         #print(f"Total tile requests: {len(tile_coords)} tiles × {n_timesteps} timesteps = {len(tile_coords) * n_timesteps}")
 
         # 2) build tasks and fetch concurrently
@@ -240,7 +223,62 @@ async def benchmark_titiler_cmr(
 
         results_lists = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # 3) flatten & frame
+    # -- process benchmark results into a dataframe
+    df = _process_benchmark_results(results_lists)
+    return df
+
+
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
+def _create_http_client(
+    timeout_s: float = 30.0,
+    max_connections: int = 20,
+    max_connections_per_host: int = 20
+) -> httpx.AsyncClient:
+    """
+    Create configured HTTP client.
+    
+    Parameters
+    ----------
+    timeout_s : float
+        Request timeout
+    max_connections : int
+        Maximum total connections
+    max_connections_per_host : int
+        Maximum connections per host
+        
+    Returns
+    -------
+    httpx.AsyncClient
+        Configured client
+    """
+    limits = httpx.Limits(
+        max_connections=max_connections,
+        max_keepalive_connections=max_connections_per_host,
+    )
+    return httpx.AsyncClient(limits=limits, timeout=timeout_s)
+
+
+def _process_benchmark_results(results_lists: List[Any]) -> pd.DataFrame:
+    """
+    Process raw benchmark results into a sorted DataFrame.
+    
+    Parameters
+    ----------
+    results_lists : List[Any]
+        Raw benchmark results from of asyncio.gather(..., return_exceptions=True), where each item is
+        either:
+          - a List[Dict[str, Any]] of row dicts, or
+          - an Exception.
+        
+    Returns
+    -------
+    pd.DataFrame
+        Processed and sorted DataFrame with benchmark results.
+    """
+    # -- TODO: save dataframes
+
     all_rows: List[Dict[str, Any]] = []
     for rows in results_lists:
         if isinstance(rows, Exception):
@@ -251,25 +289,30 @@ async def benchmark_titiler_cmr(
         else:
             print(f"Unexpected result type: {type(rows)}")
 
-    # -- TODO: save dataframes
+
     required_cols = ["z", "y", "x", "timestep_index"]
     df = pd.DataFrame(all_rows)
-    if not df.empty and all(col in df.columns for col in required_cols):
-        df = df.sort_values(required_cols).reset_index(drop=True)
-        try:
-            rss_after_num = pd.to_numeric(df["rss_after"], errors="coerce")
-            rss_peak = int(rss_after_num.max())
-            print(f"\nPeak process RSS observed: {_fmt_bytes(rss_peak)}")
-        except Exception:
-            pass
-    else:
-        print(f"Warning: DataFrame is empty or missing columns: {required_cols}")
+
+    if df.empty:
+        print("Warning: DataFrame is empty.")
+        return df
+
+    missing = [c for c in required_cols if c not in df.columns]
+
+    if missing:
+        print(f"Warning: DataFrame is missing required columns: {missing}")
+        # Still try to return something usable
+        return df.reset_index(drop=True)
+
+    df = df.sort_values(required_cols).reset_index(drop=True)
     return df
 
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
+
+
+
+
+
 def _fmt_bytes(n: int | float) -> str:
     """Format bytes in a human-friendly way (binary units)."""
     try:
@@ -288,6 +331,13 @@ def _fmt_bytes(n: int | float) -> str:
         i += 1
     return f"{sign}{n:.2f} {units[i]}"
 
+def _print_system_info():
+    """Print system information for benchmarking context."""
+    print(
+        f"Client-side: {psutil.cpu_count(logical=False)} physical / "
+        f"{psutil.cpu_count(logical=True)} logical cores | "
+        f"RAM: {_fmt_bytes(psutil.virtual_memory().total)}"
+    )
 
 
 
@@ -471,17 +521,29 @@ if __name__ == "__main__":
         pd.set_option("display.max_colwidth", None)
 
         zoom_summary = (
-            df.groupby("z").agg(
-            n_requests=("ok", "size"),
-            ok=("ok", "sum"),
-            no_data=("no_data", "sum"),
-            median_latency=("elapsed_s", lambda s: pd.to_numeric(s, errors="coerce").median()),
-            p95_latency_s=("elapsed_s", lambda s: pd.to_numeric(s, errors="coerce").quantile(0.95)),
-            median_size=("size_bytes", lambda s: _fmt_bytes(pd.to_numeric(s, errors="coerce").median())),
-            median_rss_delta=("rss_delta", lambda s: _fmt_bytes(pd.to_numeric(s, errors="coerce").median())),
+            df.assign(
+                elapsed_s=pd.to_numeric(df["elapsed_s"], errors="coerce"),
+                size_bytes=pd.to_numeric(df["size_bytes"], errors="coerce"),
+                rss_delta=pd.to_numeric(df["rss_delta"], errors="coerce"),
             )
-            .sort_index()
-        )
+            .groupby(["z", "timestep_index"])
+            .apply(
+                lambda g: pd.Series({
+                    "n_tiles": len(g),
+                    "ok_pct": 100.0 * g["ok"].sum() / len(g) if len(g) else 0.0,
+                    "no_data_pct": 100.0 * g["no_data"].sum() / len(g) if len(g) else 0.0,
+                    "error_pct": 100.0 * (
+                        len(g) - g["ok"].sum() - g["no_data"].sum()
+                    ) / len(g) if len(g) else 0.0,
+                    "median_latency_s": g["elapsed_s"].median(),
+                    "p95_latency_s": g["elapsed_s"].quantile(0.95),
+                    "median_size": _fmt_bytes(g["size_bytes"].median()),
+                    "median_rss_delta": _fmt_bytes(g["rss_delta"].median()),
+                })
+            )
+            .reset_index()
+            .sort_values(["z", "timestep_index"])
+            )
 
         print("\nSummary by zoom:")
         print (zoom_summary)
@@ -524,5 +586,33 @@ if __name__ == "__main__":
             viewport_height=viewport_height,
         )
         print("\nRI head:\n", df_ri.head())
+
+        zoom_summary = (
+            df_ri.assign(
+                elapsed_s=pd.to_numeric(df_ri["elapsed_s"], errors="coerce"),
+                size_bytes=pd.to_numeric(df_ri["size_bytes"], errors="coerce"),
+                rss_delta=pd.to_numeric(df_ri["rss_delta"], errors="coerce"),
+            )
+            .groupby(["z", "timestep_index"])
+            .apply(
+                lambda g: pd.Series({
+                    "n_tiles": len(g),
+                    "ok_pct": 100.0 * g["ok"].sum() / len(g) if len(g) else 0.0,
+                    "no_data_pct": 100.0 * g["no_data"].sum() / len(g) if len(g) else 0.0,
+                    "error_pct": 100.0 * (
+                        len(g) - g["ok"].sum() - g["no_data"].sum()
+                    ) / len(g) if len(g) else 0.0,
+                    "median_latency_s": g["elapsed_s"].median(),
+                    "p95_latency_s": g["elapsed_s"].quantile(0.95),
+                    "median_size": _fmt_bytes(g["size_bytes"].median()),
+                    "median_rss_delta": _fmt_bytes(g["rss_delta"].median()),
+                })
+            )
+            .reset_index()
+            .sort_values(["z", "timestep_index"])
+            )
+
+        print("\nSummary by zoom:")
+        print (zoom_summary)
 
     asyncio.run(_run())
