@@ -186,12 +186,6 @@ async def fetch_tile(
                 except Exception:
                     pass
 
-            if proc is not None:
-                print(
-                    f"[{i}] Tile {z}/{x}/{y} | RSS before: {rss_before:,} "
-                    f"after: {rss_after:,} delta: {rss_delta:+,} bytes"
-                )
-
             rows.append(
                 {
                     "z": z,
