@@ -19,7 +19,7 @@ import morecantile
 import pandas as pd
 from geojson_pydantic import Feature, Polygon
 
-from tiling import get_surrounding_tiles, get_tileset_tiles, fetch_tile, create_bbox_feature, BaseBenchmarker, DatasetParams
+from datacube_benchmark.tiling import get_surrounding_tiles, get_tileset_tiles, fetch_tile, create_bbox_feature, BaseBenchmarker, DatasetParams
 
 # Unified benchmarker that handles both tiles timeseries and statistics endpoints
 class TiTilerCMRBenchmarker(BaseBenchmarker):
@@ -661,7 +661,6 @@ async def check_titiler_cmr_compatibility(
     geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
     *,
     timeout_s: float = 300.0,
-    preview_limit: int = 2,
     **kwargs: Any
 ) -> Dict[str, Any]:
     """
@@ -677,8 +676,7 @@ async def check_titiler_cmr_compatibility(
         GeoJSON Feature or geometry. If None, uses bounds from tilejson
     timeout_s : float, optional
         Request timeout, by default 300.0
-    preview_limit : int, optional
-        Number of timesteps to show in statistics preview, by default 2
+
     **kwargs : Any
         Additional query parameters
 
@@ -700,10 +698,10 @@ if __name__ == "__main__":
         # Configuration
         endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
         
-        # Dataset 1: Xarray Backend (Sea Surface Temperature)
+        # Dataset 1: Xarray Backend (Precipitation)
         ds_xarray = DatasetParams.for_xarray(
             concept_id="C2723754864-GES_DISC",
-            datetime_range="2022-03-01T00:00:01Z/2022-03-02T23:59:59Z",
+            datetime_range="2022-03-01T00:00:01Z/2022-03-01T23:59:59Z",
             variable="precipitation",
             step="P1D",
             temporal_mode="point"
@@ -726,7 +724,6 @@ if __name__ == "__main__":
             endpoint=endpoint,
             dataset=ds_xarray,
             timeout_s=1000.0,
-            preview_limit=2
         )
         
         print(f"Compatibility: {compat['compatibility']}")
