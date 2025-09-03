@@ -22,6 +22,9 @@ Functions
     each request, including status code, latency, response size,
     and (optionally) memory usage deltas.
 
+- create_bbox_feature:
+
+
 """
 from __future__ import annotations
 
@@ -29,6 +32,10 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+import morecantile
+import psutil
+import pandas as pd
+from geojson_pydantic import Feature, Polygon
 
 
 def get_surrounding_tiles(
@@ -98,6 +105,9 @@ def get_tileset_tiles(
     List[Tuple[int, int]]
         List of (x, y) tile coordinates
     """
+    if bounds is None:
+        raise ValueError("No bounds available for tileset strategy")
+
     minx, miny, maxx, maxy = bounds
     
     # Get tile bounds for the bbox
@@ -228,8 +238,25 @@ async def fetch_tile(
 
     return rows
 
+def create_bbox_feature(minx: float, miny: float, maxx: float, maxy: float) -> Feature:
+    """
+    Create a GeoJSON Feature from bounding box coordinates.
 
+    Parameters
+    ----------
+    minx, miny, maxx, maxy : float
+        Bounding box coordinates.
 
+    Returns
+    -------
+    Feature
+        GeoJSON Feature representing the bounding box.
+    """
+    return Feature(
+        type="Feature",
+        geometry=Polygon.from_bounds(minx, miny, maxx, maxy),
+        properties={}
+    )
 
 def _max_tile_index(z: int) -> int:
     """
@@ -257,4 +284,90 @@ def _max_tile_index(z: int) -> int:
     """
     if z < 0:
         raise ValueError("zoom must be >= 0")
-    return (1 << z) - 1  
+    return (1 << z) - 1 
+
+# Base benchmarker with shared functionality
+class BaseBenchmarker:
+    """
+    Base class for TiTiler benchmarking infrastructure.
+
+    Provides system info, HTTP client setup, and result processing utilities
+    for derived benchmarker classes.
+    """
+    
+    def __init__(
+        self,
+        endpoint: str,
+        *,
+        timeout_s: float = 30.0,
+        max_connections: int = 20,
+        max_connections_per_host: int = 20
+    ):
+        self.endpoint = endpoint
+        self.timeout_s = timeout_s
+        self.max_connections = max_connections
+        self.max_connections_per_host = max_connections_per_host
+        self._system_info = self._get_system_info()
+    
+    def _create_http_client(self) -> httpx.AsyncClient:
+        """Create configured HTTP client."""
+        limits = httpx.Limits(
+            max_connections=self.max_connections,
+            max_keepalive_connections=self.max_connections_per_host,
+        )
+        return httpx.AsyncClient(limits=limits, timeout=self.timeout_s)
+    
+    def _get_system_info(self) -> str:
+        """Get system information string."""
+        return (
+            f"{psutil.cpu_count(logical=False)} physical / "
+            f"{psutil.cpu_count(logical=True)} logical cores | "
+            f"RAM: {self._fmt_bytes(psutil.virtual_memory().total)}"
+        )
+    
+    @staticmethod
+    def _fmt_bytes(n: int | float) -> str:
+        """Format bytes in human-friendly way."""
+        try:
+            n = float(n)
+        except Exception:
+            return "n/a"
+        
+        if n < 0:
+            sign = "-"
+            n = -n
+        else:
+            sign = ""
+        
+        units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
+        i = 0
+        while n >= 1024 and i < len(units) - 1:
+            n /= 1024.0
+            i += 1
+        
+        return f"{sign}{n:.2f} {units[i]}"
+    
+    def _process_results(self, results: List[Any]) -> pd.DataFrame:
+        """Process raw results into DataFrame."""
+        all_rows = []
+        
+        for result in results:
+            if isinstance(result, Exception):
+                print(f"Task error: {result}")
+                continue
+            if isinstance(result, list):
+                all_rows.extend(result)
+            elif isinstance(result, dict):
+                all_rows.append(result)
+        
+        df = pd.DataFrame(all_rows)
+        
+        if df.empty:
+            print("Warning: No successful results")
+            return df
+        
+        sort_cols = [col for col in ["z", "y", "x", "timestep_index"] if col in df.columns]
+        if sort_cols:
+            df = df.sort_values(sort_cols).reset_index(drop=True)
+        
+        return df 
