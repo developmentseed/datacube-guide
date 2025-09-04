@@ -370,4 +370,20 @@ class BaseBenchmarker:
         if sort_cols:
             df = df.sort_values(sort_cols).reset_index(drop=True)
         
-        return df 
+        return df
+    
+    def _log_header(self, benchmark_name: str, dataset: DatasetParams) -> None:
+        """
+        Log standardized benchmark header with system and dataset information.
+        
+        Parameters
+        ----------
+        benchmark_name : str
+            Name of the benchmark being executed.
+        dataset : DatasetParams
+            Dataset configuration being benchmarked.
+        """
+        print(f"=== TiTiler-CMR {benchmark_name} ===")
+        print(f"Client: {self._system_info}")
+        print(f"Dataset: {dataset.concept_id} ({dataset.backend})")
+ 
