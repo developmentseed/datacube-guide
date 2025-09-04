@@ -10,16 +10,26 @@
 
 ::: datacube_benchmark.benchmark_access_patterns
 
-::: datacube_benchmark.types.TARGET_SHAPES
+::: datacube_benchmark.benchmark_viewport
 
-::: datacube_benchmark.titiler_cmr_utils.DatasetParams
+::: datacube_benchmark.benchmark_tileset
 
-::: datacube_benchmark.titiler_cmr_utils.benchmark_titiler_cmr
+::: datacube_benchmark.benchmark_statistics
 
-::: datacube_benchmark.titiler_cmr_utils.CompatibilityReport
+::: datacube_benchmark.check_titiler_cmr_compatibility
 
-::: datacube_benchmark.titiler_cmr_utils.check_titiler_cmr_compatibility
+::: datacube_benchmark.tiling_benchmark_summary
 
-::: datacube_benchmark.titiler_cmr_utils.get_surrounding_tiles
+::: datacube_benchmark.TiTilerCMRBenchmarker
 
-::: datacube_benchmark.titiler_cmr_utils.fetch_tile
+::: datacube_benchmark.DatasetParams
+
+## General Tiling Utilities
+
+::: datacube_benchmark.get_surrounding_tiles
+
+::: datacube_benchmark.fetch_tile
+
+::: datacube_benchmark.get_tileset_tiles
+
+::: datacube_benchmark.create_bbox_feature
