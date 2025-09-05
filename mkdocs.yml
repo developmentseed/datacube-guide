@@ -30,6 +30,8 @@ nav:
     - "explanation/visualization.md"
     - "explanation/titiler-ecosystem.md"
 
+  - Titiler CMR Benchmarking and Compatibility:
+    - "titiler-cmr-walkthrough.ipynb"
 
   - Reference:
     - "datacube-benchmark/api.md"
