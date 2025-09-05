@@ -754,8 +754,8 @@ def tiling_benchmark_summary(df: pd.DataFrame, *, silent: bool = False) -> pd.Da
                "error_pct": 100.0 * ((len(g) - g["ok"].sum() - g["no_data"].sum()) / len(g)) if len(g) else 0.0,
                "median_latency_s": g["elapsed_s"].median(),
                "p95_latency_s": g["elapsed_s"].quantile(0.95),
-               "median_size": _fmt_bytes(g["size_bytes"].median()),
-               "median_rss_delta": _fmt_bytes(g["rss_delta"].median()),
+               "median_size": g["size_bytes"].median(),
+               "median_rss_delta": g["rss_delta"].median(),
            }), include_groups=False)
            .reset_index()
            .sort_values(["z", "timestep_index"])
