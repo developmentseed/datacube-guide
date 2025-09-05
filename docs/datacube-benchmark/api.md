@@ -24,6 +24,8 @@
 
 ::: datacube_benchmark.DatasetParams
 
+::: datacube_benchmark.types.TARGET_SHAPES
+
 ## General Tiling Utilities
 
 ::: datacube_benchmark.get_surrounding_tiles
