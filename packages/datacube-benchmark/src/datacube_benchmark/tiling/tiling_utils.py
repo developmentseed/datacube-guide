@@ -2,6 +2,8 @@
 tiling_utils
 ============
 
+from datacube_benchmark.tiling.titiler_cmr_params import DatasetParams
+
 Reusable helper functions for working with map tiles, that are independent of
 any specific benchmarking or rendering workflow. They are primarily tested
 to support TiTiler-CMR benchmarking, but can also be applied in other
@@ -23,8 +25,12 @@ Functions
     and (optionally) memory usage deltas.
 
 - create_bbox_feature:
+    Create a GeoJSON Feature representing a bounding box from
+    minx, miny, maxx, maxy coordinates.
 
-
+- BaseBenchmarker:
+    A base class providing shared functionality for TiTiler benchmarking
+    classes, including system info, HTTP client setup, and minimal result processing.
 """
 from __future__ import annotations
 
@@ -111,13 +117,14 @@ def get_tileset_tiles(
     minx, miny, maxx, maxy = bounds
     
     # Get tile bounds for the bbox
-    ul_tile = tms.tile(minx, maxy, zoom)  # upper left
-    lr_tile = tms.tile(maxx, miny, zoom)  # lower right
+    ul_tile = tms.tile(minx, maxy, zoom)
+    lr_tile = tms.tile(maxx, miny, zoom)
     
-    tiles = []
-    for x in range(ul_tile.x, lr_tile.x + 1):
-        for y in range(ul_tile.y, lr_tile.y + 1):
-            tiles.append((x, y))
+    tiles = [
+        (x, y)
+        for x in range(min(ul_tile.x, lr_tile.x), max(ul_tile.x, lr_tile.x) + 1)
+        for y in range(min(ul_tile.y, lr_tile.y), max(ul_tile.y, lr_tile.y) + 1)
+    ]
     
     return tiles
 
@@ -178,24 +185,20 @@ async def fetch_tile(
 
     for i, tmpl in enumerate(tiles_endpoints):
         tile_url = tmpl.format(z=z, x=x, y=y)
+        rss_before = proc.memory_info().rss if proc is not None else 0
+        t0 = time.perf_counter()
         try:
-            rss_before = proc.memory_info().rss if proc is not None else 0
-            t0 = time.perf_counter()
             response = await client.get(tile_url, timeout=timeout_s)
             response.elapsed = time.perf_counter() - t0
             rss_after = proc.memory_info().rss if proc is not None else 0
             rss_delta = rss_after - rss_before
 
-            status = response.status_code
+            response.raise_for_status()
+
+            status_code = response.status_code
             ctype = response.headers.get("content-type")
-            size = len(response.content) if response.content is not None else 0
-
-            if status >= 400:
-                try:
-                    print(f"[{i}] Error body: {response.text[:400]}")
-                except Exception:
-                    pass
-
+            size = len(response.content)
+            
             rows.append(
                 {
                     "z": z,
@@ -204,19 +207,25 @@ async def fetch_tile(
                     "timestep_index": i,
                     "url": tile_url,
                     "response": response, 
-                    "status_code": status,
+                    "status_code": status_code,
                     "elapsed_s": response.elapsed,
                     "size_bytes": size,
                     "content_type": ctype,
-                    "ok": (status == 200),
-                    "no_data": (status == 204),
-                    "error_text": None if status < 400 else response.text[:400],
+                    "ok": (status_code == 200),
+                    "no_data": (status_code == 204),
+                    "error_text": None,
                     "rss_delta": rss_delta,
                 }
             )
 
-        except Exception as ex:
-            print(f"[{i}] Request failed: {ex}")
+        except httpx.HTTPStatusError as ex:
+            response = ex.response
+            status_code = response.status_code
+            error_text = response.text
+            print("~~~~~~~~~~~~~~~~ ERROR FETCHING TILE ~~~~~~~~~~~~~~~~")
+            print(f"URL:    {response.request.url}")
+            print(f"Error:  {response.status_code} {response.status_reason}")   # <-- status + reason phrase
+            print(f":   {response.text}")
             rows.append(
                 {
                     "z": z,
@@ -225,13 +234,13 @@ async def fetch_tile(
                     "timestep_index": i,
                     "url": tile_url,
                     "response": response,
-                    "status_code": None,
+                    "status_code": status_code,
                     "elapsed_s": float("nan"),
                     "size_bytes": 0,
                     "content_type": None,
                     "ok": False,
                     "no_data": False,
-                    "error_text": f"{type(ex).__name__}: {ex}",
+                    "error_text": error_text,
                     "rss_delta": float("nan"),
                 }
             )
@@ -327,18 +336,13 @@ class BaseBenchmarker:
     
     @staticmethod
     def _fmt_bytes(n: int | float) -> str:
-        """Format bytes in human-friendly way."""
-        try:
-            n = float(n)
-        except Exception:
-            return "n/a"
+        """
+        Convert bytes into a human-readable string (KiB, MiB, GiB...).
+        """
+        n = float(n)
         
-        if n < 0:
-            sign = "-"
-            n = -n
-        else:
-            sign = ""
-        
+        sign = "-" if n < 0 else ""
+        n = abs(n) 
         units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
         i = 0
         while n >= 1024 and i < len(units) - 1:
@@ -348,7 +352,23 @@ class BaseBenchmarker:
         return f"{sign}{n:.2f} {units[i]}"
     
     def _process_results(self, results: List[Any]) -> pd.DataFrame:
-        """Process raw results into DataFrame."""
+        """
+        Designed for post-processing the output of ``asyncio.gather`` used in
+        tile benchmarking. Handles dicts, lists of dicts, and exceptions,
+        flattening them into rows and optionally sorting by tiling dimensions.
+
+        Parameters
+        ----------
+        results : List[Any]
+            List of results from ``asyncio.gather``, which may include
+            dictionaries, lists of dictionaries, or exceptions.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing all successful results, sorted by
+            available tiling dimensions (z, y, x, timestep_index, ....)
+        """
         all_rows = []
         
         for result in results:
