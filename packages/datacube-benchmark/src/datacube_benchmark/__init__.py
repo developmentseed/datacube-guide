@@ -20,7 +20,6 @@ from .titiler_cmr_benchmark import (
     benchmark_viewport,
     benchmark_tileset,
     benchmark_statistics,
-    check_titiler_cmr_compatibility,
     tiling_benchmark_summary,
 )
 
@@ -39,7 +38,6 @@ __all__ = [
     "benchmark_viewport",
     "benchmark_tileset",
     "benchmark_statistics",
-    "check_titiler_cmr_compatibility",
     "tiling_benchmark_summary",
 ]
 

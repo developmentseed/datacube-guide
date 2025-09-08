@@ -3,6 +3,8 @@ Unified benchmarking system for TiTiler-CMR.
 
 This module provides a clean, extensible architecture for benchmarking
 TiTiler-CMR performance across different scenarios (viewport, full tileset, statistics).
+
+Key components:
 """
 
 from __future__ import annotations
@@ -34,8 +36,6 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
     Supports benchmarking of tile rendering and statistics endpoints
     across different strategies (viewport, tileset, custom).
 
-    Also supports compatibility checks by querying TileJSON and running
-    a preview statistics request.
     """
 
     def __init__(
@@ -82,11 +82,19 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             Results for each tile request, including status, latency, and size.
         """
         self._log_header("Tile Benchmark", dataset)
-        params = self._dataset_params(dataset, include_tile_opts=True, **kwargs)
+        params = list(
+            dataset.to_query_params(
+                tile_format=self.tile_format,
+                tile_scale=self.tile_scale,
+                **kwargs
+            )
+        )
+        print(f"Query params: {len(params)} parameters")
+        for k, v in params:
+            print(f"  {k}: {v}")
         async with self._create_http_client() as client:
             tilejson_info = await self._get_tilejson_info(client, params)
             tiles_endpoints = tilejson_info["tiles_endpoints"]
-            print(f"Found {len(tiles_endpoints)} timesteps from TileJson.")
             tasks = await self._build_tile_tasks(client, tiles_endpoints, tiling_strategy, tilejson_info)
             results = await asyncio.gather(*tasks, return_exceptions=True)
         return self._process_results(results)
@@ -117,7 +125,16 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         self._log_header("Statistics Benchmark", dataset)
         async with self._create_http_client() as client:
             if geometry is None:
-                tile_params = self._dataset_params(dataset, include_tile_opts=False, **kwargs)
+                tile_params = list(
+                    dataset.to_query_params(
+                        tile_format=self.tile_format,
+                        tile_scale=self.tile_scale,
+                        **kwargs
+                    )
+                )
+                print(f"Query params: {len(params)} parameters")
+                for k, v in params:
+                    print(f"  {k}: {v}")
                 tilejson_info = await self._get_tilejson_info(client, tile_params)
                 bounds = tilejson_info.get("bounds")
                 if not bounds:
@@ -125,65 +142,6 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                 geometry = create_bbox_feature(*bounds)
             return await self._fetch_statistics(client=client, dataset=dataset, geometry=geometry, **kwargs)
 
-    async def check_compatibility(
-        self,
-        dataset: DatasetParams,
-        geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
-        **kwargs: Any
-    ) -> Dict[str, Any]:
-        """
-        Check TiTiler-CMR compatibility and get dataset overview.
-
-        Queries TileJSON for granule/timestep info, then runs statistics for preview.
-
-        Parameters
-        ----------
-        dataset : DatasetParams
-            Dataset configuration.
-        geometry : Union[Feature, Dict[str, Any]], optional
-            GeoJSON Feature or geometry. If None, uses bounds from tilejson.
-        **kwargs : Any
-            Additional query parameters.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Compatibility info including timestep count, granule info, and statistics preview.
-        """
-        self._log_header("Compatibility Check", dataset)
-        async with self._create_http_client() as client:
-            tile_params = self._dataset_params(dataset, include_tile_opts=False, **kwargs)
-            tilejson_info = await self._get_tilejson_info(client, tile_params)
-            tiles_endpoints = tilejson_info["tiles_endpoints"]
-            n_timesteps = len(tiles_endpoints)
-            print(f"Found {n_timesteps} timesteps/granules from TileJson!")
-            if geometry is None:
-                bounds = tilejson_info.get("bounds")
-                if not bounds:
-                    raise ValueError("No geometry provided and no bounds available from TileJSON")
-                geometry = create_bbox_feature(*bounds)
-
-        stats_result = await self._fetch_statistics(
-            client=client,
-            dataset=dataset,
-            geometry=geometry,
-            **kwargs
-        )
-
-        if stats_result["success"] and stats_result["statistics"]:
-            print(f"Statistics returned {len(stats_result['statistics'])} timesteps")
-        else:
-            print("Statistics request failed:", stats_result.get("error"))
-            issue_detected = True
-
-        return {
-            "concept_id": dataset.concept_id,
-            "backend": dataset.backend,
-            "n_timesteps": n_timesteps,
-            "tilejson_bounds": tilejson_info.get("bounds"),
-            "statistics": self._statistics_to_dataframe(stats_result["statistics"]) if stats_result["success"] else pd.DataFrame(),
-            "compatibility": "compatible" if n_timesteps > 0 and not issue_detected else "issues_detected",
-        }
 
     async def _fetch_statistics(
         self,
@@ -305,7 +263,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         params: List[Tuple[str, str]]
     ) -> Dict[str, Any]:
         """
-        Query TiTiler-CMR timeseries TileJSON and return parsed entries and metadata.
+        Query TiTiler-CMR TileJSON and return parsed tiles endpoints, and bounds.
 
         Parameters
         ----------
@@ -319,7 +277,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         dict
             Dictionary with entries, tilejson, tile endpoints, and bounds.
         """
-        url = f"{self.endpoint.rstrip('/')}/timeseries/{self.tms_id}/tilejson.json"
+        url = f"{self.endpoint.rstrip('/')}/{self.tms_id}/tilejson.json"
         ts_json, _, _ = await self._request_json(
             client,
             method="GET",
@@ -328,25 +286,11 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             timeout_s=self.timeout_s,
         )
         entries: List[Dict[str, Any]] = []
-        for ts, v in ts_json.items():
-            if isinstance(v, dict):
-                entries.append({
-                    "timestamp": ts,
-                    "tilejson": v.get("tilejson"),
-                    "version": v.get("version"),
-                    "scheme": v.get("scheme"),
-                    "tiles": v.get("tiles", []),
-                    "minzoom": v.get("minzoom"),
-                    "maxzoom": v.get("maxzoom"),
-                    "bounds": v.get("bounds"),
-                    "center": v.get("center"),
-                })
-        tiles_endpoints = [tile for entry in entries for tile in entry.get("tiles", [])]
+        tiles_endpoints = ts_json.get("tiles", [])
         if not tiles_endpoints:
             raise RuntimeError("No tile endpoints found in TileJSON response")
         bounds = entries[0].get("bounds") if entries else None
         return {
-            "entries": entries,
             "tilejson": ts_json,
             "tiles_endpoints": tiles_endpoints,
             "bounds": bounds,
@@ -426,19 +370,6 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             print(f"Error: {response.status_code} {response.reason_phrase}")
             print(f"Body: {response.text}")
             raise
-
-    def _dataset_params(self, dataset: DatasetParams, *, include_tile_opts: bool, **kwargs: Any) -> List[Tuple[str, str]]:
-        """
-        Build query params for a dataset with optional tile-related arguments added.
-        """
-        if include_tile_opts:
-            params = list(dataset.to_query_params(tile_format=self.tile_format, tile_scale=self.tile_scale, **kwargs))
-        else:
-            params = list(dataset.to_query_params(**kwargs))
-        print(f"Query params: {len(params)} parameters")
-        for k, v in params:
-            print(f"  {k}: {v}")
-        return params
 
 
 #---------------------------------------
@@ -543,8 +474,8 @@ async def benchmark_tileset(
     endpoint: str,
     dataset: DatasetParams,
     *,
-    bounds: Optional[List[float]] = None,
-    max_tiles_per_zoom: Optional[int] = 1000,
+    bounds: List[float] = None,
+    max_tiles_per_zoom: Optional[int] = 100,
     tms_id: str = "WebMercatorQuad",
     tile_format: str = "png",
     tile_scale: int = 1,
@@ -675,91 +606,67 @@ async def benchmark_statistics(
     return await benchmarker.benchmark_statistics(dataset, geometry, **kwargs)
 
 
-async def check_titiler_cmr_compatibility(
-    endpoint: str,
-    dataset: DatasetParams,
-    geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
-    *,
-    timeout_s: float = 300.0,
-    **kwargs: Any
-) -> Dict[str, Any]:
-    """
-    Validate dataset compatibility with a TiTiler-CMR deployment.
 
-    This function queries the timeseries TileJSON for the dataset/time range to
-    count available timesteps (granules). It then requests statistics for a
-    provided `geometry`—or, if not provided, a geometry derived from the TileJSON
-    bounds—to verify end-to-end functionality.
-
-    Parameters
-    ----------
-    endpoint : str
-        Base URL of the TiTiler-CMR deployment.
-    dataset : DatasetParams
-        Dataset configuration.
-    geometry : Union[Feature, Dict[str, Any]], optional
-        GeoJSON Feature or geometry. If None, uses bounds from tilejson.
-    timeout_s : float, optional
-        Request timeout in seconds (default: 300.0).
-    **kwargs : Any
-        Additional query parameters for the API.
-    
-    Returns
-    -------
-    Dict[str, Any]
-        Compatibility info including timestep count, granule info, and statistics preview.
+def _fmt_bytes(n: int | float) -> str:
     """
-    benchmarker = TiTilerCMRBenchmarker(endpoint=endpoint, timeout_s=timeout_s)
-    return await benchmarker.check_compatibility(dataset, geometry, **kwargs)
+    Convert bytes into a human-readable string (KiB, MiB, GiB...).
+    """
+    n = float(n)
+    sign = "-" if n < 0 else ""
+    n = abs(n)
+    units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
+    i = 0
+    while n >= 1024 and i < len(units) - 1:
+        n /= 1024.0
+        i += 1
+    return f"{sign}{n:.2f} {units[i]}"
 
 
 def tiling_benchmark_summary(df: pd.DataFrame, *, silent: bool = False) -> pd.DataFrame:
     """
     Compute and (optionally) print summary statistics for tile benchmark results.
 
-    Groups by zoom level `z` and `timestep_index` and reports:
+    Groups by zoom level and reports:
       - n_tiles
       - ok_pct, no_data_pct, error_pct
       - median_latency_s, p95_latency_s
-      - median_size_bytes
-      - median_rss_delta
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Raw tile benchmark results. Expected columns:
-        z, x, timestep_index, ok, no_data, elapsed_s, size_bytes, rss_delta.
-    silent : bool, optional
-        If False (default), prints a formatted summary table. If True, returns
-        the summary without printing.
-
-    Returns
-    -------
-    pd.DataFrame
-        Summary statistics by zoom and timestep. Empty if input is empty or
-        required columns are missing.
+      - median_size (bytes + human-readable)
+      - median_rss_delta (bytes + human-readable)
     """
-    required = {"z", "x", "timestep_index", "ok", "no_data", "elapsed_s", "size_bytes", "rss_delta"}
-    if df.empty or not required.issubset(df.columns):
+    if df is None or df.empty:
         return pd.DataFrame()
+
     gdf = df.copy()
-    for col in ["elapsed_s", "size_bytes", "rss_delta"]:
+    if "zoom" not in gdf.columns and "z" in gdf.columns:
+        gdf = gdf.rename(columns={"z": "zoom"})
+
+    required = {
+        "zoom", "x", "y", "ok", "no_data", "is_error",
+        "response_time_sec", "response_size_bytes", "rss_delta"
+    }
+    if not required.issubset(gdf.columns):
+        return pd.DataFrame()
+
+    for col in ["response_time_sec", "response_size_bytes", "rss_delta"]:
         gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
+
     summary = (
-        gdf.groupby(["z", "timestep_index"])
+        gdf.groupby(["zoom"], dropna=False)
            .apply(lambda g: pd.Series({
-               "n_tiles": len(g),
+               "n_tiles": int(len(g)),
                "ok_pct": 100.0 * (g["ok"].sum() / len(g)) if len(g) else 0.0,
                "no_data_pct": 100.0 * (g["no_data"].sum() / len(g)) if len(g) else 0.0,
-               "error_pct": 100.0 * ((len(g) - g["ok"].sum() - g["no_data"].sum()) / len(g)) if len(g) else 0.0,
-               "median_latency_s": g["elapsed_s"].median(),
-               "p95_latency_s": g["elapsed_s"].quantile(0.95),
-               "median_size": g["size_bytes"].median(),
-               "median_rss_delta": g["rss_delta"].median(),
+               "error_pct": 100.0 * (g["is_error"].sum() / len(g)) if len(g) else 0.0,
+               "median_latency_s": g["response_time_sec"].median(),
+               "p95_latency_s": g["response_time_sec"].quantile(0.95),
+               "median_size": _fmt_bytes(g["response_size_bytes"].median()),
+               "median_rss_delta": _fmt_bytes(g["rss_delta"].median()),
            }), include_groups=False)
            .reset_index()
-           .sort_values(["z", "timestep_index"])
+           .sort_values(["zoom"])
     )
+
+
     return summary
 
 
@@ -767,7 +674,6 @@ __all__ = [
     "benchmark_viewport",
     "benchmark_tileset",
     "benchmark_statistics",
-    "check_titiler_cmr_compatibility",
     "tiling_benchmark_summary",
     "TiTilerCMRBenchmarker",
 ]
@@ -779,51 +685,56 @@ if __name__ == "__main__":
         """Example usage of the unified TiTiler-CMR benchmarking system."""
         endpoint = "https://staging.openveda.cloud/api/titiler-cmr"
 
-        ds_xarray = DatasetParams.for_xarray(
+        ds_xarray = DatasetParams(
             concept_id="C2723754864-GES_DISC",
+            backend="xarray",
             datetime_range="2022-03-01T00:00:01Z/2022-03-01T23:59:59Z",
             variable="precipitation",
             step="P1D",
             temporal_mode="point",
         )
 
-        ds_hls = DatasetParams.for_rasterio(
+        ds_hls = DatasetParams(
             concept_id="C2036881735-POCLOUD",
+            backend="rasterio",
             datetime_range="2024-10-01T00:00:01Z/2024-10-10T00:00:01Z",
             bands=["B04", "B03", "B02"],
             bands_regex="B[0-9][0-9]",
-            step="P1W",
+            step="P1D",
             temporal_mode="point",
         )
 
-        print("=== Example 1: Compatibility Check ===")
-        compat = await check_titiler_cmr_compatibility(
+        print("\n=== Example 2: Viewport Tile Benchmarking ===")
+        df_viewport = await benchmark_viewport(
             endpoint=endpoint,
             dataset=ds_xarray,
-            timeout_s=1000.0,
+            lng=-95.0,
+            lat=29.0,
+            viewport_width=3,
+            viewport_height=3,
+            min_zoom=3,
+            max_zoom=20,
+            timeout_s=60.0,
         )
-        print(f"Compatibility: {compat['compatibility']}")
-        print(f"Timesteps: {compat['n_timesteps']}")
-        print(f"Bounds: {compat['tilejson_bounds']}")
-        if not compat["statistics"].empty:
-            print(f"Statistics preview:\n{compat['statistics']}")
+        print(f"Viewport results: {len(df_viewport)} tile requests")
+        print(df_viewport.head())
+        print(tiling_benchmark_summary(df_viewport))
 
         print("\n=== Example 2: Viewport Tile Benchmarking ===")
-        if compat["compatibility"] == "compatible":
-            df_viewport = await benchmark_viewport(
-                endpoint=endpoint,
-                dataset=ds_xarray,
-                lng=-95.0,
-                lat=29.0,
-                viewport_width=3,
-                viewport_height=3,
-                min_zoom=7,
-                max_zoom=8,
-                timeout_s=60.0,
-            )
-            print(f"Viewport results: {len(df_viewport)} tile requests")
-            print(df_viewport.head())
-            tiling_benchmark_summary(df_viewport)
+        df_viewport = await benchmark_viewport(
+            endpoint=endpoint,
+            dataset=ds_hls,
+            lng=-95.0,
+            lat=29.0,
+            viewport_width=3,
+            viewport_height=3,
+            min_zoom=7,
+            max_zoom=8,
+            timeout_s=60.0,
+        )
+        print(f"Viewport results: {len(df_viewport)} tile requests")
+        print(df_viewport.head())
+        print(tiling_benchmark_summary(df_viewport))
 
         print("\n=== Example 3: Tileset Tile Benchmarking ===")
         gulf_bounds = [-98.676, 18.857, -81.623, 31.097]
@@ -837,7 +748,7 @@ if __name__ == "__main__":
             timeout_s=60.0,
         )
         print(f"Tileset results: {len(df_tileset)} tile requests")
-        tiling_benchmark_summary(df_tileset)
+        print(tiling_benchmark_summary(df_tileset))
 
         print("\n=== Example 4: Statistics Benchmarking ===")
         gulf_geometry = create_bbox_feature(-98.676, 18.857, -81.623, 31.097)
@@ -852,29 +763,5 @@ if __name__ == "__main__":
         print(f"  Elapsed: {stats_result['elapsed_s']:.2f}s")
         print(f"  Timesteps: {stats_result['n_timesteps']}")
         print(f"  Statistics: {stats_result['statistics']}")
-
-        print("\n=== Example 5: Using Main Benchmarker Class ===")
-        benchmarker = TiTilerCMRBenchmarker(
-            endpoint=endpoint,
-            min_zoom=7,
-            max_zoom=8,
-            timeout_s=120.0,
-            max_connections=5,
-        )
-
-        def custom_viewport_strategy(zoom, tms, tilejson_info):
-            center = tms.tile(lng=-92.1, lat=46.8, zoom=zoom)
-            return get_surrounding_tiles(
-                center_x=center.x, center_y=center.y, zoom=zoom, width=2, height=2
-            )
-
-        df_custom = await benchmarker.benchmark_tiles(ds_xarray, custom_viewport_strategy)
-        print(f"Custom viewport results: {len(df_custom)} tile requests")
-
-        stats_custom = await benchmarker.benchmark_statistics(dataset=ds_xarray, geometry=None)
-        print(f"Custom statistics result: {stats_custom['success']}, {stats_custom['n_timesteps']} timesteps")
-
-        compat_custom = await benchmarker.check_compatibility(dataset=ds_xarray)
-        print(f"Custom compatibility: {compat_custom['compatibility']}")
 
     asyncio.run(main())
