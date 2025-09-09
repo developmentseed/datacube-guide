@@ -140,13 +140,6 @@ async def fetch_tile(
     For a single (z,x,y), iterate over all tiles endpoints, GET the tile, print status,
     and return one record per request.
 
-    Timing semantics:
-      - Excludes external queueing/semaphore wait by design (measure that outside).
-      - ttfb_sec:      time to first byte (headers) after starting the request
-      - transfer_time_sec: body transfer time
-      - response_time_sec: total on-wire time = ttfb_sec + transfer_time_sec
-      - sched_delay_sec: (optional) time from `started_at` (post-semaphore) to when we begin I/O
-
     Parameters
     ----------
     client : httpx.AsyncClient

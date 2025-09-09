@@ -321,7 +321,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         pd.DataFrame
             Results for each tile request, including status, latency, and size.
         """
-        self._log_header("Tile Benchmark (Global Pool)", dataset)
+        self._log_header("Tile Benchmark", dataset)
 
         tile_params = list(
             dataset.to_query_params(
@@ -599,10 +599,23 @@ def tiling_benchmark_summary(df):
 
     Params
     ------
+    df : pd.DataFrame
+        DataFrame containing tile benchmark results. Must include the following columns:
+        - zoom : int
+            Zoom level for each tile request
+        - ok : bool
+            Whether the tile request was successful (HTTP 200)
+        - no_data : bool
+            Whether the tile request returned no data (HTTP 204)
+        - is_error : bool
+            Whether the tile request resulted in an error
+        - response_time_sec : float
+            Response time for each tile request in seconds
 
-
-
-
+    Returns
+    -------
+    pd.DataFrame
+        Summary statistics grouped by zoom level with columns
     """
     for col in ["response_time_sec"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -688,8 +701,8 @@ if __name__ == "__main__":
         df_viewport2 = await benchmark_viewport(
             endpoint=endpoint,
             dataset=ds_hls,
-            lng=-95.0,
-            lat=29.0,
+            lng=29,
+            lat=25.0,
             viewport_width=4,
             viewport_height=4,
             min_zoom=7,

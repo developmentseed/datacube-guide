@@ -16,11 +16,11 @@ from .tiling import (
     BaseBenchmarker,
 )
 from .titiler_cmr_benchmark import (
-    TiTilerCMRBenchmarker,
     benchmark_viewport,
     benchmark_tileset,
     benchmark_statistics,
     tiling_benchmark_summary,
+    TiTilerCMRBenchmarker,
 )
 
 import numpy as np

@@ -16,8 +16,6 @@
 
 ::: datacube_benchmark.benchmark_statistics
 
-::: datacube_benchmark.check_titiler_cmr_compatibility
-
 ::: datacube_benchmark.tiling_benchmark_summary
 
 ::: datacube_benchmark.TiTilerCMRBenchmarker
