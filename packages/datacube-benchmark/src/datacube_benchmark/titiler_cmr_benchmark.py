@@ -8,380 +8,33 @@ performance across common scenarios:
 - **Tileset**: enumerate all tiles intersecting a bbox (with optional caps)
 - **Statistics**: call `/timeseries/statistics` for a geometry and time range
 
-
-
-
 """
 from __future__ import annotations
 
 import asyncio
 import time
 from asyncio import BoundedSemaphore
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import httpx
-import psutil
 import morecantile
 import pandas as pd
+import psutil
 from geojson_pydantic import Feature
 
 from datacube_benchmark.tiling import (
-    get_surrounding_tiles,
-    get_tileset_tiles,
-    fetch_tile,
-    create_bbox_feature,
     BaseBenchmarker,
     DatasetParams,
+    create_bbox_feature,
+    fetch_tile,
+    get_surrounding_tiles,
+    get_tileset_tiles,
 )
 
 
-class TiTilerCMRBenchmarker(BaseBenchmarker):
-    """
-    Main benchmarking utility for TiTiler-CMR.
-    Supports benchmarking of tile rendering and statistics endpoints
-    across different strategies (viewport, tileset, custom).
-    """
-
-    def __init__(
-        self,
-        endpoint: str,
-        *,
-        tms_id: str = "WebMercatorQuad",
-        tile_format: str = "png",
-        tile_scale: int = 1,
-        min_zoom: int = 7,
-        max_zoom: int = 10,
-        max_concurrent: int = 32,
-        **base_kwargs: Any,
-    ):
-        super().__init__(endpoint, **base_kwargs)
-        self.tms_id = tms_id
-        self.tile_format = tile_format
-        self.tile_scale = tile_scale
-        self.min_zoom = min_zoom
-        self.max_zoom = max_zoom
-        self.max_concurrent = max_concurrent
-
-    async def benchmark_tiles(
-        self,
-        dataset: DatasetParams,
-        tiling_strategy: Callable,
-        warmup_per_zoom: int = 1,
-        **kwargs: Any
-    ) -> pd.DataFrame:
-        """
-        Benchmark tile rendering performance for TiTiler-CMR.
-        It can be adopted for a viewport or whole tileset generation at a zoom level.
-
-        Parameters
-        ----------
-        dataset : DatasetParams
-            Dataset and query parameters (concept_id, backend, datetime_range, kwargs).
-        tiling_strategy : Callable
-            Function that returns tiles for a given zoom level.
-            Signature: (zoom, tms, tilejson_info) -> List[Tuple[int, int]]
-        warmup_per_zoom : int, optional
-            Number of warmup tiles to fetch per zoom level before timing.
-            Default is 1.
-        **kwargs : Any
-            Additional query parameters for the API.
-
-        Returns
-        -------
-        pd.DataFrame
-            Results for each tile request, including status, latency, and size.
-        """
-        self._log_header("Tile Benchmark (per-zoom sequential)", dataset)
-
-        tile_params = list(
-            dataset.to_query_params(
-                tile_format=self.tile_format,
-                tile_scale=self.tile_scale,
-                **kwargs
-            )
-        )
-        print(f"Query params: {len(tile_params)} parameters")
-        for k, v in tile_params:
-            print(f"  {k}: {v}")
-
-
-        async with self._create_http_client() as client:
-            tilejson_info = await self._get_tilejson_info(client, tile_params)
-            tiles_endpoints = tilejson_info["tiles_endpoints"]
-
-            all_rows = []
-            for zoom in range(self.min_zoom, self.max_zoom + 1):
-                tms = morecantile.tms.get(self.tms_id)
-                tiles = tiling_strategy(zoom, tms, tilejson_info)
-                rows = await self._run_zoom_batch(
-                    client=client,
-                    zoom=zoom,
-                    tiles=tiles,
-                    tiles_endpoints=tiles_endpoints,
-                    warmup=max(0, int(warmup_per_zoom)),
-                    max_concurrent=self.max_concurrent,
-                )
-                all_rows.extend(rows)
-
-        return self._process_results(all_rows)
-
-    async def benchmark_statistics(
-        self,
-        dataset: DatasetParams,
-        geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
-        **kwargs: Any
-    ) -> Dict[str, Any]:
-        """
-        Benchmark statistics endpoint performance with timing and memory metrics.
-
-        Parameters
-        ----------
-        dataset : DatasetParams
-            Dataset configuration.
-        geometry : Union[Feature, Dict[str, Any]], optional
-            GeoJSON Feature or geometry to analyze. If None, uses bounds from tilejson.
-        **kwargs : Any
-            Additional query parameters.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Statistics result with timing, memory, and metadata.
-        """
-        self._log_header("Statistics Benchmark", dataset)
-        async with self._create_http_client() as client:
-            if geometry is None:
-                raise ValueError("No geometry provided and no bounds available from TileJSON")
-            return await self._fetch_statistics(client=client, dataset=dataset, geometry=geometry, **kwargs)
-
-    async def _fetch_statistics(
-        self,
-        client: httpx.AsyncClient,
-        dataset: DatasetParams,
-        geometry: Union[Feature, Dict[str, Any]],
-        **kwargs: Any
-    ) -> Dict[str, Any]:
-        """
-        Posts the provided GeoJSON Feature or raw geometry to the TiTiler-CMR
-        `/timeseries/statistics` endpoint and returns per-timestep summary
-        statistics for pixels intersecting the geometry.
-        
-        Parameters
-        ----------
-        client : httpx.AsyncClient
-            HTTP client for requests.
-        dataset : DatasetParams
-            Dataset configuration.
-        geometry : Union[Feature, Dict[str, Any]]
-            GeoJSON Feature or geometry.
-        **kwargs : Any
-            Additional query parameters.
-        
-        Returns
-        -------
-        Dict[str, Any]
-            Statistics result and metadata and timing.
-        """
-        url = f"{self.endpoint.rstrip('/')}/timeseries/statistics"
-        tile_params = dict(dataset.to_query_params(**kwargs))
-
-        if hasattr(geometry, "model_dump"):
-            geojson_body = geometry.model_dump(exclude_none=True)
-        elif isinstance(geometry, dict):
-            geojson_body = geometry
-        else:
-            raise ValueError("geometry must be a GeoJSON Feature or dict")
-        
-        try:
-            data, elapsed, status = await self._request_json(
-                client,
-                method="POST",
-                url=url,
-                params=tile_params,
-                json_payload=geojson_body,
-                timeout_s=self.timeout_s
-            )
-
-            stats = data.get("properties", {}).get("statistics", {})
-            return {
-                "success": True,
-                "elapsed_s": elapsed,
-                "status_code": status,
-                "n_timesteps": len(stats) if isinstance(stats, dict) else 0,
-                "url": url,
-                "statistics": stats,
-                "error": None,
-            }
-        except Exception as ex:
-            return {
-                "success": False,
-                "elapsed_s": None,
-                "status_code": None,
-                "n_timesteps": 0,
-                "url": url,
-                "statistics": {},
-                "error": f"{type(ex).__name__}: {ex}",
-            }
-
-    async def _get_tilejson_info(
-        self, 
-        client: httpx.AsyncClient, 
-        params: List[Tuple[str, str]]
-    ) -> Dict[str, Any]:
-        """
-        Query TiTiler-CMR TileJSON and return parsed tiles endpoints, and bounds.
-
-        Parameters
-        ----------
-        client : httpx.AsyncClient
-            HTTP client for requests.
-        params : list of tuple
-            Query parameters for the request.
-        
-        Returns
-        -------
-        dict
-            Dictionary with entries, tilejson, tile endpoints, and bounds.
-        """
-        url = f"{self.endpoint.rstrip('/')}/{self.tms_id}/tilejson.json"
-        ts_json, _, _ = await self._request_json(
-            client,
-            method="GET",
-            url=url,
-            params=dict(params),
-            timeout_s=self.timeout_s,
-        )
-        tiles_endpoints = ts_json.get("tiles", [])
-
-        if not tiles_endpoints:
-            raise RuntimeError("No tile endpoints found in TileJSON response")
-
-        bounds = ts_json.get("bounds")
-        return {
-            "tilejson": ts_json,
-            "tiles_endpoints": tiles_endpoints,
-            "bounds": bounds,
-        }
-
-    async def _run_zoom_batch(
-        self,
-        client: httpx.AsyncClient,
-        zoom: int,
-        tiles: List[Tuple[int, int]],
-        tiles_endpoints: List[str],
-        warmup: int = 1,
-        max_concurrent: int = 32,
-    ) -> List[Dict[str, Any]]:
-        """
-        Execute a single-zoom batch with bounded concurrency and optional warmup.
-        Each row is annotated with:
-          - batch_zoom
-          - batch_elapsed_s (wall clock for the whole zoom batch)
-          - queue_delay_sec (time spent waiting on the semaphore)
-        """
-        proc = psutil.Process()
-        sem = BoundedSemaphore(max(1, int(max_concurrent)))
-
-        jitter_ms = 5
-
-        async def _one(x: int, y: int):
-            await asyncio.sleep((hash((zoom, x, y)) % jitter_ms) * 0.1)
-
-            t_queued = time.perf_counter()
-            async with sem:
-                kw = dict(
-                    client=client,
-                    tiles_endpoints=tiles_endpoints,
-                    z=zoom, x=x, y=y,
-                    timeout_s=self.timeout_s,
-                    proc=proc,
-                )
-
-                rows = await fetch_tile(**kw)
-
-            out = []
-            if isinstance(rows, list):
-                for rec in rows:
-                    r = dict(rec)
-                    out.append(r)
-            return out
-
-        # ---- Warmup (sequential; don’t fail the batch on warmup issues) ----
-        for x, y in tiles[:max(0, warmup)]:
-            try:
-                await _one(x, y)
-            except Exception:
-                pass
-
-        # ---- Main batch ----
-        batch_started_at = time.perf_counter()
-        tasks = [asyncio.create_task(_one(x, y)) for x, y in tiles]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        out=[]
-        for result in results:
-            if isinstance(result, list):
-                out.extend(result)
-            elif isinstance(result, dict):
-                out.append(result)
-            elif isinstance(result, Exception):
-                out.append({
-                    "batch_zoom": zoom,
-                    "is_error": True,
-                    "error_text": f"{type(result).__name__}: {result}",
-                })
-
-        batch_elapsed = time.perf_counter() - batch_started_at
-        for r in out:
-            r["batch_elapsed_s"] = batch_elapsed
-        print (r)
-        print(f"Zoom {zoom} batch elapsed time: {batch_elapsed:.3f}s")
-
-        return out
-
-    async def _request_json(
-        self,
-        client: httpx.AsyncClient,
-        *,
-        method: str,
-        url: str,
-        timeout_s: float,
-        params: Optional[Dict[str, Any]] = None,
-        json_payload: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Dict[str, Any], float, int]:
-        """
-        Unified JSON request helper for GET/POST with consistent error handling.
-        Returns
-        -------
-        (payload, elapsed_s, status_code)
-        """
-        timeout = self.timeout_s
-
-        t0 = time.perf_counter()
-        try:
-            if method.upper() == "GET":
-                response = await client.get(url, params=params or {}, timeout=timeout)
-            elif method.upper() == "POST":
-                response = await client.post(url, params=params or {}, json=json_payload, timeout=timeout)
-            else:
-                raise ValueError(f"Unsupported HTTP method: {method!r}")
-            response.raise_for_status()
-            elapsed = time.perf_counter() - t0
-            data = response.json()
-            return data if isinstance(data, dict) else {}, elapsed, response.status_code
-        except httpx.HTTPStatusError as ex:
-            response = ex.response
-            elapsed = time.perf_counter() - t0
-            print("~~~~~~~~~~~~~~~~ ERROR JSON REQUEST ~~~~~~~~~~~~~~~~")
-            print(f"URL: {response.request.url}")
-            print(f"Error: {response.status_code} {response.reason_phrase}")
-            print(f"Body: {response.text}")
-            raise
-
-
-#---------------------------------------
+# ---------------------------------------
 # top level public API
-#---------------------------------------
+# ---------------------------------------
 
 async def benchmark_viewport(
     endpoint: str,
@@ -400,7 +53,7 @@ async def benchmark_viewport(
     max_connections: int = 32,
     max_connections_per_host: int = 32,
     max_concurrent: int = 32,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Benchmark tile rendering for a *viewport* centered at (lng, lat).
@@ -426,7 +79,7 @@ async def benchmark_viewport(
         Number of tiles in the Y direction (default: 5).
     tms_id : str, optional
         Tile matrix set ID (default: "WebMercatorQuad").
-    tile_format : str, optional 
+    tile_format : str, optional
         Tile format (default: "png").
     tile_scale : int, optional
         Tile scale factor (default: 1).
@@ -446,7 +99,7 @@ async def benchmark_viewport(
     Returns
     -------
     pd.DataFrame
-            Results for each tile request, including status, latency, and size.    
+            Results for each tile request, including status, latency, and size.
     """
     benchmarker = TiTilerCMRBenchmarker(
         endpoint=endpoint,
@@ -462,9 +115,7 @@ async def benchmark_viewport(
     )
 
     def viewport_strategy(
-        zoom: int,
-        tms: morecantile.TileMatrixSet,
-        _tilejson_info: Dict[str, Any]
+        zoom: int, tms: morecantile.TileMatrixSet, _tilejson_info: Dict[str, Any]
     ) -> List[Tuple[int, int]]:
         center = tms.tile(lng=lng, lat=lat, zoom=zoom)
         return get_surrounding_tiles(
@@ -495,7 +146,7 @@ async def benchmark_tileset(
     max_connections: int = 32,
     max_connections_per_host: int = 32,
     max_concurrent: int = 32,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Benchmark tile rendering for a *full tileset* over given bounds.
@@ -535,7 +186,7 @@ async def benchmark_tileset(
     Returns
     -------
     pd.DataFrame
-        Results for each tile request, including status, latency, and size. 
+        Results for each tile request, including status, latency, and size.
     """
     benchmarker = TiTilerCMRBenchmarker(
         endpoint=endpoint,
@@ -551,9 +202,7 @@ async def benchmark_tileset(
     )
 
     def tileset_strategy(
-        zoom: int,
-        tms: morecantile.TileMatrixSet,
-        tilejson_info: Dict[str, Any]
+        zoom: int, tms: morecantile.TileMatrixSet, tilejson_info: Dict[str, Any]
     ) -> List[Tuple[int, int]]:
         b = bounds or tilejson_info.get("bounds")
         if not b:
@@ -576,7 +225,7 @@ async def benchmark_statistics(
     timeout_s: float = 300.0,
     max_connections: int = 10,
     max_connections_per_host: int = 10,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Benchmark the `/timeseries/statistics` endpoint for a geometry.
@@ -590,17 +239,17 @@ async def benchmark_statistics(
         Base URL of the TiTiler-CMR deployment.
     dataset : DatasetParams
         Dataset configuration.
-    geometry : Union[Feature, Dict[str, Any]], optional 
+    geometry : Union[Feature, Dict[str, Any]], optional
         GeoJSON Feature or geometry to analyze. If None, uses bounds from tilejson.
     timeout_s : float, optional
-        Request timeout in seconds (default: 300.0).    
+        Request timeout in seconds (default: 300.0).
     max_connections : int, optional
         Maximum total concurrent connections (default: 10).
     max_connections_per_host : int, optional
         Maximum concurrent connections per host (default: 10).
     **kwargs : Any
         Additional query parameters for the API.
-    
+
     Returns
     -------
     Dict[str, Any]
@@ -611,9 +260,333 @@ async def benchmark_statistics(
         endpoint=endpoint,
         timeout_s=timeout_s,
         max_connections=max_connections,
-        max_connections_per_host=max_connections_per_host
+        max_connections_per_host=max_connections_per_host,
     )
     return await benchmarker.benchmark_statistics(dataset, geometry, **kwargs)
+
+
+class TiTilerCMRBenchmarker(BaseBenchmarker):
+    """
+    Main benchmarking utility for TiTiler-CMR.
+    Supports benchmarking of tile rendering and statistics endpoints
+    across different strategies (viewport, tileset, custom).
+    """
+
+    def __init__(
+        self,
+        endpoint: str,
+        *,
+        tms_id: str = "WebMercatorQuad",
+        tile_format: str = "png",
+        tile_scale: int = 1,
+        min_zoom: int = 7,
+        max_zoom: int = 10,
+        max_concurrent: int = 32,
+        **base_kwargs: Any,
+    ):
+        super().__init__(endpoint, **base_kwargs)
+        self.tms_id = tms_id
+        self.tile_format = tile_format
+        self.tile_scale = tile_scale
+        self.min_zoom = min_zoom
+        self.max_zoom = max_zoom
+        self.max_concurrent = max_concurrent
+
+    async def benchmark_tiles(
+        self,
+        dataset: DatasetParams,
+        tiling_strategy: Callable,
+        warmup_per_zoom: int = 1,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Benchmark tile rendering performance for TiTiler-CMR.
+        It can be adopted for a viewport or whole tileset generation at a zoom level.
+
+        Parameters
+        ----------
+        dataset : DatasetParams
+            Dataset and query parameters (concept_id, backend, datetime_range, kwargs).
+        tiling_strategy : Callable
+            Function that returns tiles for a given zoom level.
+            Signature: (zoom, tms, tilejson_info) -> List[Tuple[int, int]]
+        warmup_per_zoom : int, optional
+            Number of warmup tiles to fetch per zoom level before timing.
+            Default is 1.
+        **kwargs : Any
+            Additional query parameters for the API.
+
+        Returns
+        -------
+        pd.DataFrame
+            Results for each tile request, including status, latency, and size.
+        """
+        self._log_header("Tile Benchmark (Global Pool)", dataset)
+
+        tile_params = list(
+            dataset.to_query_params(
+                tile_format=self.tile_format, tile_scale=self.tile_scale, **kwargs
+            )
+        )
+        print(f"Query params: {len(tile_params)} parameters")
+        for k, v in tile_params:
+            print(f"  {k}: {v}")
+
+        async with self._create_http_client() as client:
+            tilejson_info = await self._get_tilejson_info(client, tile_params)
+            tiles_endpoints = tilejson_info["tiles_endpoints"]
+            tms = morecantile.tms.get(self.tms_id)
+            
+            # --- 1. Discover all tiles across all zoom levels ---
+            jobs = []
+            per_zoom_tiles = {}
+            for zoom in range(self.min_zoom, self.max_zoom + 1):
+                tiles = tiling_strategy(zoom, tms, tilejson_info)
+                per_zoom_tiles[zoom] = tiles
+                for x, y in tiles:
+                    jobs.append((zoom, x, y))
+            
+            # --- 2. Set up global concurrency controls ---
+            sem = BoundedSemaphore(self.max_concurrent)
+            proc = psutil.Process()
+            jitter_ms = 5
+
+            async def _fetch_one_tile(z, x, y):
+                # Small jitter to de-synchronize requests
+                await asyncio.sleep((hash((z, x, y)) % jitter_ms) * 0.001)
+
+                async with sem:
+                    try:
+                        return await fetch_tile(
+                            client=client,
+                            tiles_endpoints=tiles_endpoints,
+                            z=z, x=x, y=y,
+                            timeout_s=self.timeout_s,
+                            proc=proc,
+                        )
+                    except Exception as ex:
+                        return [{
+                            "zoom": z, "x": x, "y": y, "is_error": True,
+                            "error_text": f"{type(ex).__name__}: {ex}"
+                        }]
+
+            # --- 3. Run warmup requests (bypassing semaphore) ---
+            warmed_tiles = set()
+            if warmup_per_zoom > 0:
+                for zoom, tiles in per_zoom_tiles.items():
+                    for x, y in tiles[:warmup_per_zoom]:
+                        if (zoom, x, y) not in warmed_tiles:
+                            try:
+                                await fetch_tile(
+                                    client=client, tiles_endpoints=tiles_endpoints,
+                                    z=zoom, x=x, y=y, timeout_s=self.timeout_s, proc=proc
+                                )
+                                warmed_tiles.add((zoom, x, y))
+                            except Exception:
+                                pass # Ignore warmup failures
+
+            # --- 4. Create and run main benchmark tasks ---
+            tasks_to_run = [
+                asyncio.create_task(_fetch_one_tile(z, x, y))
+                for z, x, y in jobs
+            ]
+            
+            run_started_at = time.perf_counter()
+            all_rows = []
+            for future in asyncio.as_completed(tasks_to_run):
+                result = await future
+                if isinstance(result, list):
+                    all_rows.extend(result)
+            
+            run_elapsed = time.perf_counter() - run_started_at
+            print(f"Total execution time: {run_elapsed:.3f}s")
+            
+            # Add total elapsed time to each record
+            for r in all_rows:
+                r["total_run_elapsed_s"] = run_elapsed
+
+        return self._process_results(all_rows)
+
+    async def benchmark_statistics(
+        self,
+        dataset: DatasetParams,
+        geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Benchmark statistics endpoint performance with timing and memory metrics.
+
+        Parameters
+        ----------
+        dataset : DatasetParams
+            Dataset configuration.
+        geometry : Union[Feature, Dict[str, Any]], optional
+            GeoJSON Feature or geometry to analyze. If None, uses bounds from tilejson.
+        **kwargs : Any
+            Additional query parameters.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Statistics result with timing, memory, and metadata.
+        """
+        self._log_header("Statistics Benchmark", dataset)
+        async with self._create_http_client() as client:
+            if geometry is None:
+                raise ValueError(
+                    "No geometry provided and no bounds available from TileJSON"
+                )
+            return await self._fetch_statistics(
+                client=client, dataset=dataset, geometry=geometry, **kwargs
+            )
+
+    async def _fetch_statistics(
+        self,
+        client: httpx.AsyncClient,
+        dataset: DatasetParams,
+        geometry: Union[Feature, Dict[str, Any]],
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Posts the provided GeoJSON Feature or raw geometry to the TiTiler-CMR
+        `/timeseries/statistics` endpoint and returns per-timestep summary
+        statistics for pixels intersecting the geometry.
+
+        Parameters
+        ----------
+        client : httpx.AsyncClient
+            HTTP client for requests.
+        dataset : DatasetParams
+            Dataset configuration.
+        geometry : Union[Feature, Dict[str, Any]]
+            GeoJSON Feature or geometry.
+        **kwargs : Any
+            Additional query parameters.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Statistics result and metadata and timing.
+        """
+        url = f"{self.endpoint.rstrip('/')}/timeseries/statistics"
+        tile_params = dict(dataset.to_query_params(**kwargs))
+
+        if hasattr(geometry, "model_dump"):
+            geojson_body = geometry.model_dump(exclude_none=True)
+        elif isinstance(geometry, dict):
+            geojson_body = geometry
+        else:
+            raise ValueError("geometry must be a GeoJSON Feature or dict")
+
+        try:
+            data, elapsed, status = await self._request_json(
+                client,
+                method="POST",
+                url=url,
+                params=tile_params,
+                json_payload=geojson_body,
+                timeout_s=self.timeout_s,
+            )
+
+            stats = data.get("properties", {}).get("statistics", {})
+            return {
+                "success": True,
+                "elapsed_s": elapsed,
+                "status_code": status,
+                "n_timesteps": len(stats) if isinstance(stats, dict) else 0,
+                "url": url,
+                "statistics": stats,
+                "error": None,
+            }
+        except Exception as ex:
+            return {
+                "success": False,
+                "elapsed_s": None,
+                "status_code": None,
+                "n_timesteps": 0,
+                "url": url,
+                "statistics": {},
+                "error": f"{type(ex).__name__}: {ex}",
+            }
+
+    async def _get_tilejson_info(
+        self, client: httpx.AsyncClient, params: List[Tuple[str, str]]
+    ) -> Dict[str, Any]:
+        """
+        Query TiTiler-CMR TileJSON and return parsed tiles endpoints, and bounds.
+
+        Parameters
+        ----------
+        client : httpx.AsyncClient
+            HTTP client for requests.
+        params : list of tuple
+            Query parameters for the request.
+
+        Returns
+        -------
+        dict
+            Dictionary with entries, tilejson, tile endpoints, and bounds.
+        """
+        url = f"{self.endpoint.rstrip('/')}/{self.tms_id}/tilejson.json"
+        ts_json, _, _ = await self._request_json(
+            client,
+            method="GET",
+            url=url,
+            params=dict(params),
+            timeout_s=self.timeout_s,
+        )
+        tiles_endpoints = ts_json.get("tiles", [])
+
+        if not tiles_endpoints:
+            raise RuntimeError("No tile endpoints found in TileJSON response")
+
+        bounds = ts_json.get("bounds")
+        return {
+            "tilejson": ts_json,
+            "tiles_endpoints": tiles_endpoints,
+            "bounds": bounds,
+        }
+
+    async def _request_json(
+        self,
+        client: httpx.AsyncClient,
+        *,
+        method: str,
+        url: str,
+        timeout_s: float,
+        params: Optional[Dict[str, Any]] = None,
+        json_payload: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Dict[str, Any], float, int]:
+        """
+        Unified JSON request helper for GET/POST with consistent error handling.
+        Returns
+        -------
+        (payload, elapsed_s, status_code)
+        """
+        timeout = self.timeout_s
+
+        t0 = time.perf_counter()
+        try:
+            if method.upper() == "GET":
+                response = await client.get(url, params=params or {}, timeout=timeout)
+            elif method.upper() == "POST":
+                response = await client.post(
+                    url, params=params or {}, json=json_payload, timeout=timeout
+                )
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method!r}")
+            response.raise_for_status()
+            elapsed = time.perf_counter() - t0
+            data = response.json()
+            return data if isinstance(data, dict) else {}, elapsed, response.status_code
+        except httpx.HTTPStatusError as ex:
+            response = ex.response
+            elapsed = time.perf_counter() - t0
+            print("~~~~~~~~~~~~~~~~ ERROR JSON REQUEST ~~~~~~~~~~~~~~~~")
+            print(f"URL: {response.request.url}")
+            print(f"Error: {response.status_code} {response.reason_phrase}")
+            print(f"Body: {response.text}")
+            raise
 
 
 def tiling_benchmark_summary(df):
@@ -636,16 +609,25 @@ def tiling_benchmark_summary(df):
 
     summary = (
         df.groupby(["zoom"], dropna=False)
-           .apply(lambda g: pd.Series({
-               "n_tiles": int(len(g)),
-               "ok_pct": 100.0 * (g["ok"].sum() / len(g)) if len(g) else 0.0,
-               "no_data_pct": 100.0 * (g["no_data"].sum() / len(g)) if len(g) else 0.0,
-               "error_pct": 100.0 * (g["is_error"].sum() / len(g)) if len(g) else 0.0,
-               "median_latency_s": g["response_time_sec"].median(),
-               "p95_latency_s": g["response_time_sec"].quantile(0.95),
-           }), include_groups=False)
-           .reset_index()
-           .sort_values(["zoom"])
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "n_tiles": int(len(g)),
+                    "ok_pct": 100.0 * (g["ok"].sum() / len(g)) if len(g) else 0.0,
+                    "no_data_pct": 100.0 * (g["no_data"].sum() / len(g))
+                    if len(g)
+                    else 0.0,
+                    "error_pct": 100.0 * (g["is_error"].sum() / len(g))
+                    if len(g)
+                    else 0.0,
+                    "median_latency_s": g["response_time_sec"].median(),
+                    "p95_latency_s": g["response_time_sec"].quantile(0.95),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+        .sort_values(["zoom"])
     )
     return summary
 
@@ -684,7 +666,7 @@ if __name__ == "__main__":
             temporal_mode="point",
         )
 
-        print("\n=== Example 1: Viewport Tile Benchmarking ===")
+        print("\n=== Example 1: Viewport Tile Benchmarking [Xarray]===")
         df_viewport = await benchmark_viewport(
             endpoint=endpoint,
             dataset=ds_xarray,
@@ -692,16 +674,17 @@ if __name__ == "__main__":
             lat=29.0,
             viewport_width=4,
             viewport_height=4,
-            min_zoom=3,
+            min_zoom=5,
             max_zoom=18,
             timeout_s=60.0,
             max_concurrent=32,
         )
+
         print(f"Viewport results: {len(df_viewport)} tile requests")
         print(df_viewport.head())
         print(tiling_benchmark_summary(df_viewport))
 
-        print("\n=== Example 2: Viewport Tile Benchmarking (HLS) ===")
+        print("\n=== Example 2: Viewport Tile Benchmarking [RasterIO]===")
         df_viewport2 = await benchmark_viewport(
             endpoint=endpoint,
             dataset=ds_hls,
@@ -745,6 +728,7 @@ if __name__ == "__main__":
         print(f"  Success: {stats_result['success']}")
         print(f"  Elapsed: {stats_result['elapsed_s']:.2f}s")
         print(f"  Timesteps: {stats_result['n_timesteps']}")
-        print(f"  Statistics keys: {list(stats_result.get('statistics', {}).keys())[:3]}...")
+        print(f"  Statistics keys: {list(stats_result.get('statistics', {}).keys())[:3]}..."
+        )
 
     asyncio.run(main())
