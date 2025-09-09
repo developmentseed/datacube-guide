@@ -111,9 +111,6 @@ def get_tileset_tiles(
     List[Tuple[int, int]]
         List of (x, y) tile coordinates
     """
-    if bounds is None:
-        raise ValueError("No bounds available for tileset strategy")
-
     minx, miny, maxx, maxy = bounds
     
     # Get tile bounds for the bbox
@@ -143,105 +140,94 @@ async def fetch_tile(
     For a single (z,x,y), iterate over all tiles endpoints, GET the tile, print status,
     and return one record per request.
 
-     Parameters
+    Timing semantics:
+      - Excludes external queueing/semaphore wait by design (measure that outside).
+      - ttfb_sec:      time to first byte (headers) after starting the request
+      - transfer_time_sec: body transfer time
+      - response_time_sec: total on-wire time = ttfb_sec + transfer_time_sec
+      - sched_delay_sec: (optional) time from `started_at` (post-semaphore) to when we begin I/O
+
+    Parameters
     ----------
-        client : httpx.AsyncClient
-            The HTTP client to use for requests.
-        tiles_endpoints : list of str
-            A list of URL templates containing ``{z}``, ``{x}``, and ``{y}`` placeholders.
-        z : int
-            The zoom level of the tile.
-        x : int
-            The x index of the tile.
-        y : int
-            The y index of the tile.
-        timeout_s : float
-            Request timeout in seconds. Default is 30.0 seconds.
-        proc : psutil.Process, optional
-            The process to monitor for memory usage. If not provided, memory metrics will be unavailable.
+    client : httpx.AsyncClient
+        The HTTP client to use for requests.
+    tiles_endpoints : list of str
+        URL templates containing {z}, {x}, and {y}.
+    z, x, y : int
+        Tile coordinates.
+    timeout_s : float
+        Per-request timeout (seconds).
+    proc : psutil.Process, optional
+        Process to sample RSS.
+    started_at : float, optional
+        Timestamp captured *after* you acquire your concurrency gate (e.g., semaphore).
 
     Returns
     -------
-    list of dict
-        One dictionary per requested template with (at least) the following keys:
-
-        - ``z`` (int): zoom level.
-        - ``x`` (int): tile x index.
-        - ``y`` (int): tile y index.
-        - ``timestep_index`` (int): index of the template within ``tiles_endpoints``.
-        - ``url`` (str): fully formatted request URL.
-        - ``status_code`` (int or None): HTTP status code; ``None`` if the request failed.
-        - ``elapsed_s`` (float): wall-clock time for the request (seconds).
-        - ``size_bytes`` (int): response body size in bytes (``0`` if no content or on failure).
-        - ``content_type`` (str or None): value of the ``Content-Type`` header, if present.
-        - ``ok`` (bool): ``True`` if ``status_code == 200``.
-        - ``no_data`` (bool): ``True`` iff ``status_code == 204``.
-        - ``error_text`` (str or None): short error snippet for non-2xx responses or exceptions.
-        - ``rss_delta`` (int or float): ``rss_after - rss_before`` (bytes; ``NaN`` on error).
-
-
+    List[Dict[str, Any]]
+        One dictionary per endpoint with fields:
+          zoom/z/x/y, timestep_index, url, status_code, ok, no_data, is_error,
+          ttfb_sec, transfer_time_sec, response_time_sec,
+          response_size_bytes, content_type, error_text, rss_delta,
+          sched_delay_sec (if started_at provided)
     """
     rows: List[Dict[str, Any]] = []
 
     for i, tmpl in enumerate(tiles_endpoints):
         tile_url = tmpl.format(z=z, x=x, y=y)
-        rss_before = proc.memory_info().rss if proc is not None else 0
         t0 = time.perf_counter()
         try:
-            response = await client.get(tile_url, timeout=timeout_s)
-            response.elapsed = time.perf_counter() - t0
-            rss_after = proc.memory_info().rss if proc is not None else 0
-            rss_delta = rss_after - rss_before
+            resp = await client.get(tile_url, timeout=timeout_s)
+            total = time.perf_counter() - t0
 
-            response.raise_for_status()
+            status_code = resp.status_code
+            ctype = resp.headers.get("content-type")
+            size = len(resp.content)
+            is_ok = (status_code == 200)
+            is_no_data = (status_code == 204)
+            is_error = not (200 <= status_code < 300)
 
-            status_code = response.status_code
-            ctype = response.headers.get("content-type")
-            size = len(response.content)
-            
+            resp.raise_for_status()
+
             rows.append(
-                {
-                    "z": z,
-                    "x": x,
-                    "y": y,
-                    "timestep_index": i,
-                    "url": tile_url,
-                    "response": response, 
-                    "status_code": status_code,
-                    "elapsed_s": response.elapsed,
-                    "size_bytes": size,
-                    "content_type": ctype,
-                    "ok": (status_code == 200),
-                    "no_data": (status_code == 204),
-                    "error_text": None,
-                    "rss_delta": rss_delta,
+            {
+                "zoom": z,
+                "x": x,
+                "y": y,
+                "status_code": status_code,
+                "ok": is_ok,
+                "no_data": is_no_data,
+                "is_error": is_error,
+                "response_time_sec": total,
+                "content_type": ctype,
+                "response_size_bytes": size,
+                "url": tile_url,
+                "error_text": None,
                 }
             )
 
         except httpx.HTTPStatusError as ex:
             response = ex.response
             status_code = response.status_code
-            error_text = response.text
+            error_text = response.text            
             print("~~~~~~~~~~~~~~~~ ERROR FETCHING TILE ~~~~~~~~~~~~~~~~")
             print(f"URL:    {response.request.url}")
             print(f"Error:  {response.status_code} {response.status_reason}")   # <-- status + reason phrase
             print(f":   {response.text}")
-            rows.append(
+            row = (
                 {
-                    "z": z,
-                    "x": x,
-                    "y": y,
-                    "timestep_index": i,
-                    "url": tile_url,
-                    "response": response,
-                    "status_code": status_code,
-                    "elapsed_s": float("nan"),
-                    "size_bytes": 0,
-                    "content_type": None,
-                    "ok": False,
-                    "no_data": False,
-                    "error_text": error_text,
-                    "rss_delta": float("nan"),
+                "zoom": z,
+                "x": x,
+                "y": y,
+                "status_code": None,
+                "ok": False,
+                "no_data": False,
+                "is_error": True,
+                "response_time_sec": float("nan"),
+                "response_size_bytes": 0,
+                "content_type": None,
+                "url": tile_url,
+                "error_text": error_text,
                 }
             )
 
