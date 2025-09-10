@@ -31,8 +31,8 @@ nav:
     - "explanation/titiler-ecosystem.md"
 
   - Titiler CMR Benchmarking:
-    - Tile Generation Performance: "/titiler-cmr/titiler-cmr-benchmark.ipynb"
-    - Statistics Endpoint Performance: "/titiler-cmr/titiler-statistics-benchmark.ipynb"
+    - Tile Generation Performance: "titiler-cmr/titiler-cmr-benchmark.ipynb"
+    - Statistics Endpoint Performance: "titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
 
   - Reference:
     - "datacube-benchmark/api.md"

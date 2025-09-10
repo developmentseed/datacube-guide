@@ -20,16 +20,16 @@
 
 ::: datacube_benchmark.TiTilerCMRBenchmarker
 
-::: datacube_benchmark.DatasetParams
+::: datacube_benchmark.tiling.DatasetParams
 
 ::: datacube_benchmark.types.TARGET_SHAPES
 
 ## General Tiling Utilities
 
-::: datacube_benchmark.get_surrounding_tiles
+::: datacube_benchmark.tiling.get_surrounding_tiles
 
-::: datacube_benchmark.fetch_tile
+::: datacube_benchmark.tiling.fetch_tile
 
-::: datacube_benchmark.get_tileset_tiles
+::: datacube_benchmark.tiling.get_tileset_tiles
 
-::: datacube_benchmark.create_bbox_feature
+::: datacube_benchmark.tiling.create_bbox_feature
