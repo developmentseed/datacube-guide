@@ -1,0 +1,5 @@
+[codespell]
+ignore-words-list = ND,nd,bu, dNe, slippy, tye
+skip = *.png,*.jpg,*.gif,*.pdf,*.svg
+quiet-level = 3
+
