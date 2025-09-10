@@ -1,12 +1,11 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Sequence, Tuple
 
 
 # ------------------------------
 # Dataclasses
 # ------------------------------
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -82,7 +81,9 @@ class DatasetParams:
                 raise ValueError("For backend='xarray', 'variable' must be provided.")
         elif self.backend == "rasterio":
             if not (self.bands and self.bands_regex):
-                raise ValueError("For backend='rasterio', 'bands' and 'bands_regex' must be provided.")
+                raise ValueError(
+                    "For backend='rasterio', 'bands' and 'bands_regex' must be provided."
+                )
 
         # Collect from dataclass fields
         all_kwargs: Dict[str, Any] = {

@@ -1,37 +1,24 @@
 """
-tiling_utils
-============
+Utilities for working with XYZ/WebMercator tiles and async tile fetching.
+These are reusable helper functions for map tiling that are independent of any specific
+benchmarking or rendering workflow. They are primarily exercised by
+TiTiler-CMR benchmarking code, but are also applicable to other contexts where
+tile math and asynchronous HTTP fetching are needed.
 
-from datacube_benchmark.tiling.titiler_cmr_params import DatasetParams
-
-Reusable helper functions for working with map tiles, that are independent of
-any specific benchmarking or rendering workflow. They are primarily tested
-to support TiTiler-CMR benchmarking, but can also be applied in other
-contexts where XYZ tile math and asynchronous tile fetching are needed.
-
-Functions
----------
-- get_surrounding_tiles:
-    Compute the list of (x, y) tile coordinates forming a rectangular
+See Also
+--------
+get_surrounding_tiles : Compute (x, y) tile coordinates forming a rectangular
     viewport centered on a given tile index at a specific zoom level.
-
-- get_tileset_tiles:
-    Get all tiles for a complete zoom level within geographic bounds.
-
-- fetch_tile:
-    Asynchronously fetch one or more tiles from a set of TileJSON
-    templates for a given (z, x, y). Returns structured metadata for
-    each request, including status code, latency, response size,
-    and (optionally) memory usage deltas.
-
-- create_bbox_feature:
-    Create a GeoJSON Feature representing a bounding box from
-    minx, miny, maxx, maxy coordinates.
-
-- BaseBenchmarker:
-    A base class providing shared functionality for TiTiler benchmarking
-    classes, including system info, HTTP client setup, and minimal result processing.
+get_tileset_tiles : Enumerate all tiles for a complete zoom level within
+    geographic bounds.
+fetch_tile : Asynchronously fetch one or more tiles for a given (z, x, y) from
+    a set of TileJSON templates, returning status, latency, and size metadata.
+create_bbox_feature : Build a GeoJSON Feature representing a bounding box from
+    (minx, miny, maxx, maxy) coordinates.
+BaseBenchmarker : Base class with shared functionality for TiTiler benchmarking
+    (system info, HTTP client setup, and minimal result processing).
 """
+
 from __future__ import annotations
 
 import time
@@ -42,6 +29,8 @@ import morecantile
 import psutil
 import pandas as pd
 from geojson_pydantic import Feature, Polygon
+
+from .titiler_cmr_params import DatasetParams
 
 
 def get_surrounding_tiles(
@@ -58,21 +47,21 @@ def get_surrounding_tiles(
 
     Parameters
     ----------
-        center_x (int): The x index of the central tile.
-        center_y (int): The y index of the central tile.
-        zoom (int): The zoom level.
-        width (int): The width of the viewport in tiles.
-        height (int): The height of the viewport in tiles.
+    center_x : int
+        X index of the center tile.
+    center_y : int
+        Y index of the center tile.
+    zoom : int
+        WebMercator zoom level.
+    width : int
+        Viewport width in tiles.
+    height : int
+        Viewport height in tiles.
 
     Returns
     -------
-        list[tuple[int, int]]: A list of (x, y) coordinates for the surrounding tiles.
-
-    Raises
-    ------
-        ValueError
-            If `width <= 0` or `height <= 0`.
-
+    list of tuple of int
+        List of (x, y) tile indices covering the viewport (row-major order).
     """
     if width <= 0 or height <= 0:
         raise ValueError("width and height must be > 0")
@@ -89,14 +78,13 @@ def get_surrounding_tiles(
             tiles.append((x_valid, y_valid))
     return tiles
 
+
 def get_tileset_tiles(
-    bounds: List[float], 
-    zoom: int, 
-    tms: morecantile.TileMatrixSet
+    bounds: List[float], zoom: int, tms: morecantile.TileMatrixSet
 ) -> List[Tuple[int, int]]:
     """
     Get all tiles for a complete zoom level within bounds.
-    
+
     Parameters
     ----------
     bounds : List[float]
@@ -105,24 +93,24 @@ def get_tileset_tiles(
         Zoom level
     tms : morecantile.TileMatrixSet
         Tile matrix set
-        
+
     Returns
     -------
     List[Tuple[int, int]]
         List of (x, y) tile coordinates
     """
     minx, miny, maxx, maxy = bounds
-    
+
     # Get tile bounds for the bbox
     ul_tile = tms.tile(minx, maxy, zoom)
     lr_tile = tms.tile(maxx, miny, zoom)
-    
+
     tiles = [
         (x, y)
         for x in range(min(ul_tile.x, lr_tile.x), max(ul_tile.x, lr_tile.x) + 1)
         for y in range(min(ul_tile.y, lr_tile.y), max(ul_tile.y, lr_tile.y) + 1)
     ]
-    
+
     return tiles
 
 
@@ -152,8 +140,6 @@ async def fetch_tile(
         Per-request timeout (seconds).
     proc : psutil.Process, optional
         Process to sample RSS.
-    started_at : float, optional
-        Timestamp captured *after* you acquire your concurrency gate (e.g., semaphore).
 
     Returns
     -------
@@ -176,55 +162,58 @@ async def fetch_tile(
             status_code = resp.status_code
             ctype = resp.headers.get("content-type")
             size = len(resp.content)
-            is_ok = (status_code == 200)
-            is_no_data = (status_code == 204)
+            is_ok = status_code == 200
+            is_no_data = status_code == 204
             is_error = not (200 <= status_code < 300)
 
             resp.raise_for_status()
 
             rows.append(
-            {
-                "zoom": z,
-                "x": x,
-                "y": y,
-                "status_code": status_code,
-                "ok": is_ok,
-                "no_data": is_no_data,
-                "is_error": is_error,
-                "response_time_sec": total,
-                "content_type": ctype,
-                "response_size_bytes": size,
-                "url": tile_url,
-                "error_text": None,
+                {
+                    "zoom": z,
+                    "x": x,
+                    "y": y,
+                    "status_code": status_code,
+                    "ok": is_ok,
+                    "no_data": is_no_data,
+                    "is_error": is_error,
+                    "response_time_sec": total,
+                    "content_type": ctype,
+                    "response_size_bytes": size,
+                    "url": tile_url,
+                    "error_text": None,
                 }
             )
 
         except httpx.HTTPStatusError as ex:
             response = ex.response
             status_code = response.status_code
-            error_text = response.text            
+            error_text = response.text
             print("~~~~~~~~~~~~~~~~ ERROR FETCHING TILE ~~~~~~~~~~~~~~~~")
             print(f"URL:    {response.request.url}")
-            print(f"Error:  {response.status_code} {response.status_reason}")   # <-- status + reason phrase
+            print(
+                f"Error:  {response.status_code} {response.status_reason}"
+            )  # <-- status + reason phrase
             print(f":   {response.text}")
-            row = (
+            rows.append(
                 {
-                "zoom": z,
-                "x": x,
-                "y": y,
-                "status_code": None,
-                "ok": False,
-                "no_data": False,
-                "is_error": True,
-                "response_time_sec": float("nan"),
-                "response_size_bytes": 0,
-                "content_type": None,
-                "url": tile_url,
-                "error_text": error_text,
+                    "zoom": z,
+                    "x": x,
+                    "y": y,
+                    "status_code": None,
+                    "ok": False,
+                    "no_data": False,
+                    "is_error": True,
+                    "response_time_sec": float("nan"),
+                    "response_size_bytes": 0,
+                    "content_type": None,
+                    "url": tile_url,
+                    "error_text": error_text,
                 }
             )
 
     return rows
+
 
 def create_bbox_feature(minx: float, miny: float, maxx: float, maxy: float) -> Feature:
     """
@@ -243,8 +232,9 @@ def create_bbox_feature(minx: float, miny: float, maxx: float, maxy: float) -> F
     return Feature(
         type="Feature",
         geometry=Polygon.from_bounds(minx, miny, maxx, maxy),
-        properties={}
+        properties={},
     )
+
 
 def _max_tile_index(z: int) -> int:
     """
@@ -272,7 +262,8 @@ def _max_tile_index(z: int) -> int:
     """
     if z < 0:
         raise ValueError("zoom must be >= 0")
-    return (1 << z) - 1 
+    return (1 << z) - 1
+
 
 # Base benchmarker with shared functionality
 class BaseBenchmarker:
@@ -282,21 +273,21 @@ class BaseBenchmarker:
     Provides system info, HTTP client setup, and result processing utilities
     for derived benchmarker classes.
     """
-    
+
     def __init__(
         self,
         endpoint: str,
         *,
         timeout_s: float = 30.0,
         max_connections: int = 20,
-        max_connections_per_host: int = 20
+        max_connections_per_host: int = 20,
     ):
         self.endpoint = endpoint
         self.timeout_s = timeout_s
         self.max_connections = max_connections
         self.max_connections_per_host = max_connections_per_host
         self._system_info = self._get_system_info()
-    
+
     def _create_http_client(self) -> httpx.AsyncClient:
         """Create configured HTTP client."""
         limits = httpx.Limits(
@@ -304,7 +295,7 @@ class BaseBenchmarker:
             max_keepalive_connections=self.max_connections_per_host,
         )
         return httpx.AsyncClient(limits=limits, timeout=self.timeout_s)
-    
+
     def _get_system_info(self) -> str:
         """Get system information string."""
         return (
@@ -312,24 +303,24 @@ class BaseBenchmarker:
             f"{psutil.cpu_count(logical=True)} logical cores | "
             f"RAM: {self._fmt_bytes(psutil.virtual_memory().total)}"
         )
-    
+
     @staticmethod
     def _fmt_bytes(n: int | float) -> str:
         """
         Convert bytes into a human-readable string (KiB, MiB, GiB...).
         """
         n = float(n)
-        
+
         sign = "-" if n < 0 else ""
-        n = abs(n) 
+        n = abs(n)
         units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
         i = 0
         while n >= 1024 and i < len(units) - 1:
             n /= 1024.0
             i += 1
-        
+
         return f"{sign}{n:.2f} {units[i]}"
-    
+
     def _process_results(self, results: List[Any]) -> pd.DataFrame:
         """
         Designed for post-processing the output of ``asyncio.gather`` used in
@@ -349,7 +340,7 @@ class BaseBenchmarker:
             available tiling dimensions (z, y, x, timestep_index, ....)
         """
         all_rows = []
-        
+
         for result in results:
             if isinstance(result, Exception):
                 print(f"Task error: {result}")
@@ -358,23 +349,25 @@ class BaseBenchmarker:
                 all_rows.extend(result)
             elif isinstance(result, dict):
                 all_rows.append(result)
-        
+
         df = pd.DataFrame(all_rows)
-        
+
         if df.empty:
             print("Warning: No successful results")
             return df
-        
-        sort_cols = [col for col in ["z", "y", "x", "timestep_index"] if col in df.columns]
+
+        sort_cols = [
+            col for col in ["z", "y", "x", "timestep_index"] if col in df.columns
+        ]
         if sort_cols:
             df = df.sort_values(sort_cols).reset_index(drop=True)
-        
+
         return df
-    
+
     def _log_header(self, benchmark_name: str, dataset: DatasetParams) -> None:
         """
         Log standardized benchmark header with system and dataset information.
-        
+
         Parameters
         ----------
         benchmark_name : str
@@ -385,4 +378,3 @@ class BaseBenchmarker:
         print(f"=== TiTiler-CMR {benchmark_name} ===")
         print(f"Client: {self._system_info}")
         print(f"Dataset: {dataset.concept_id} ({dataset.backend})")
- 

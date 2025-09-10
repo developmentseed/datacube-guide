@@ -9,6 +9,7 @@ performance across common scenarios:
 - **Statistics**: call `/timeseries/statistics` for a geometry and time range
 
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +36,7 @@ from datacube_benchmark.tiling import (
 # ---------------------------------------
 # top level public API
 # ---------------------------------------
+
 
 async def benchmark_viewport(
     endpoint: str,
@@ -135,7 +137,7 @@ async def benchmark_tileset(
     endpoint: str,
     dataset: DatasetParams,
     *,
-    bounds: List[float] = None,
+    bounds: List[float],
     max_tiles_per_zoom: Optional[int] = 100,
     tms_id: str = "WebMercatorQuad",
     tile_format: str = "png",
@@ -336,7 +338,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             tilejson_info = await self._get_tilejson_info(client, tile_params)
             tiles_endpoints = tilejson_info["tiles_endpoints"]
             tms = morecantile.tms.get(self.tms_id)
-            
+
             # --- 1. Discover all tiles across all zoom levels ---
             jobs = []
             per_zoom_tiles = {}
@@ -345,7 +347,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                 per_zoom_tiles[zoom] = tiles
                 for x, y in tiles:
                     jobs.append((zoom, x, y))
-            
+
             # --- 2. Set up global concurrency controls ---
             sem = BoundedSemaphore(self.max_concurrent)
             proc = psutil.Process()
@@ -360,15 +362,22 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                         return await fetch_tile(
                             client=client,
                             tiles_endpoints=tiles_endpoints,
-                            z=z, x=x, y=y,
+                            z=z,
+                            x=x,
+                            y=y,
                             timeout_s=self.timeout_s,
                             proc=proc,
                         )
                     except Exception as ex:
-                        return [{
-                            "zoom": z, "x": x, "y": y, "is_error": True,
-                            "error_text": f"{type(ex).__name__}: {ex}"
-                        }]
+                        return [
+                            {
+                                "zoom": z,
+                                "x": x,
+                                "y": y,
+                                "is_error": True,
+                                "error_text": f"{type(ex).__name__}: {ex}",
+                            }
+                        ]
 
             # --- 3. Run warmup requests (bypassing semaphore) ---
             warmed_tiles = set()
@@ -378,29 +387,33 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                         if (zoom, x, y) not in warmed_tiles:
                             try:
                                 await fetch_tile(
-                                    client=client, tiles_endpoints=tiles_endpoints,
-                                    z=zoom, x=x, y=y, timeout_s=self.timeout_s, proc=proc
+                                    client=client,
+                                    tiles_endpoints=tiles_endpoints,
+                                    z=zoom,
+                                    x=x,
+                                    y=y,
+                                    timeout_s=self.timeout_s,
+                                    proc=proc,
                                 )
                                 warmed_tiles.add((zoom, x, y))
                             except Exception:
-                                pass # Ignore warmup failures
+                                pass  # Ignore warmup failures
 
             # --- 4. Create and run main benchmark tasks ---
             tasks_to_run = [
-                asyncio.create_task(_fetch_one_tile(z, x, y))
-                for z, x, y in jobs
+                asyncio.create_task(_fetch_one_tile(z, x, y)) for z, x, y in jobs
             ]
-            
+
             run_started_at = time.perf_counter()
             all_rows = []
             for future in asyncio.as_completed(tasks_to_run):
                 result = await future
                 if isinstance(result, list):
                     all_rows.extend(result)
-            
+
             run_elapsed = time.perf_counter() - run_started_at
             print(f"Total execution time: {run_elapsed:.3f}s")
-            
+
             # Add total elapsed time to each record
             for r in all_rows:
                 r["total_run_elapsed_s"] = run_elapsed
@@ -597,25 +610,15 @@ def tiling_benchmark_summary(df):
       - ok_pct, no_data_pct, error_pct
       - median_latency_s, p95_latency_s
 
-    Params
-    ------
-    df : pd.DataFrame
-        DataFrame containing tile benchmark results. Must include the following columns:
-        - zoom : int
-            Zoom level for each tile request
-        - ok : bool
-            Whether the tile request was successful (HTTP 200)
-        - no_data : bool
-            Whether the tile request returned no data (HTTP 204)
-        - is_error : bool
-            Whether the tile request resulted in an error
-        - response_time_sec : float
-            Response time for each tile request in seconds
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Raw per-tile results with at least ``zoom`` ``ok``, and ``response_time_sec``.
 
     Returns
     -------
-    pd.DataFrame
-        Summary statistics grouped by zoom level with columns
+    pandas.DataFrame
+        Summary statistics by zoom level (count, median, p95, etc.).
     """
     for col in ["response_time_sec"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -741,7 +744,8 @@ if __name__ == "__main__":
         print(f"  Success: {stats_result['success']}")
         print(f"  Elapsed: {stats_result['elapsed_s']:.2f}s")
         print(f"  Timesteps: {stats_result['n_timesteps']}")
-        print(f"  Statistics keys: {list(stats_result.get('statistics', {}).keys())[:3]}..."
+        print(
+            f"  Statistics keys: {list(stats_result.get('statistics', {}).keys())[:3]}..."
         )
 
     asyncio.run(main())

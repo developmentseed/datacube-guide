@@ -8,13 +8,6 @@ from .create import Quantity
 from .config import Config
 from .query import benchmark_zarr_array, benchmark_access_patterns
 from .open import benchmark_dataset_open
-from .tiling import (
-    get_surrounding_tiles,
-    fetch_tile,
-    get_tileset_tiles,
-    create_bbox_feature,
-    BaseBenchmarker,
-)
 from .titiler_cmr_benchmark import (
     benchmark_viewport,
     benchmark_tileset,
@@ -40,6 +33,7 @@ __all__ = [
     "benchmark_statistics",
     "tiling_benchmark_summary",
 ]
+
 
 def main() -> None:
     da = create_empty_dataarray()
