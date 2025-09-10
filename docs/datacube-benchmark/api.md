@@ -1,4 +1,4 @@
-# API Documentation
+# Datacube access
 
 ::: datacube_benchmark.utils.array_storage_size
 
@@ -16,20 +16,4 @@
 
 ::: datacube_benchmark.benchmark_statistics
 
-::: datacube_benchmark.tiling_benchmark_summary
-
-::: datacube_benchmark.TiTilerCMRBenchmarker
-
-::: datacube_benchmark.tiling.DatasetParams
-
 ::: datacube_benchmark.types.TARGET_SHAPES
-
-## General Tiling Utilities
-
-::: datacube_benchmark.tiling.get_surrounding_tiles
-
-::: datacube_benchmark.tiling.fetch_tile
-
-::: datacube_benchmark.tiling.get_tileset_tiles
-
-::: datacube_benchmark.tiling.create_bbox_feature
