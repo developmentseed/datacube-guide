@@ -14,28 +14,35 @@ nav:
   - "index.md"
   - Datacube Worst Practices:
     - Common production gotchas:
-      - Tiny data chunks: "tiny-chunks.ipynb"
-      - Massive data chunks: "massive-chunks.ipynb"
-      - Tiny coordinate chunks: "tiny-coordinate-chunks.ipynb"
-      - Dispersed metadata: "dispersed-metadata.ipynb"
-      - Non-standardized metadata: "non-standardized-metadata.ipynb"
-      - Bloated datatypes: "bloated-datatypes.ipynb"
+      - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
+      - Massive data chunks: "worst-practices/massive-chunks.ipynb"
+      - Tiny coordinate chunks: "worst-practices/tiny-coordinate-chunks.ipynb"
+      - Dispersed metadata: "worst-practices/dispersed-metadata.ipynb"
+      - Non-standardized metadata: "worst-practices/non-standardized-metadata.ipynb"
+      - Bloated datatypes: "worst-practices/bloated-datatypes.ipynb"
     - Common usage gotchas:
-      - Default Xarray combine arguments: "xarray-combine-defaults.md"
-      - Default FSSpec caching arguments: "fsspec-caching-defaults.md"
-      - Default GDAL config: "gdal-defaults.md"
-      - Using old libraries: "old-libraries.md"
-
+      - Default Xarray combine arguments: "worst-practices/xarray-combine-defaults.md"
+      - Default FSSpec caching arguments: "worst-practices/fsspec-caching-defaults.md"
+      - Default GDAL config: "worst-practices/gdal-defaults.md"
+      - Using old libraries: "worst-practices/old-libraries.md"
   - Datacube Visualization:
-    - "explanation/visualization.md"
-    - "explanation/titiler-ecosystem.md"
+    - Overview: "visualization/overview.md"
+    - Titiler:
+      - Ecosystem overview: "visualization/titiler/overview.md"
+      - Performance benchmarking:
+        - Titiler-CMR tile generation: "visualization/titiler/titiler-cmr/titiler-cmr-benchmark.ipynb"
+        - Titiler-CMR timeseries statistics: "visualization/titiler/titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
 
-  - Titiler CMR Benchmarking:
-    - Tile Generation Performance: "titiler-cmr/titiler-cmr-benchmark.ipynb"
-    - Statistics Endpoint Performance: "titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
+  - API Reference:
+    - Benchmarking:
+      - "api-reference/datacube-benchmark.md"
+      - "api-reference/titiler-benchmark.md"
+    - Titiler:
+      - "api-reference/titiler/index.md"
+      - "api-reference/titiler/titiler-core.md"
+      - "api-reference/titiler/titiler-cmr.md"
+      - "api-reference/titiler/titiler-multidim.md"
 
-  - Reference:
-    - "datacube-benchmark/api.md"
 watch:
   - packages
   - docs

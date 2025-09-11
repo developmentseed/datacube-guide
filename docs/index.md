@@ -10,39 +10,39 @@ The datacube worst practices guidebook is intended as an open, community-maintai
 
     ---
 
-    [:octicons-arrow-right-24: Tiny data chunks](tiny-chunks.ipynb)
+    [:octicons-arrow-right-24: Tiny data chunks](worst-practices/tiny-chunks.ipynb)
 
 -   __Massive data chunks__
 
     ---
 
-    [:octicons-arrow-right-24: Massive data chunks](massive-chunks.ipynb)
+    [:octicons-arrow-right-24: Massive data chunks](worst-practices/massive-chunks.ipynb)
 
 -   __Tiny coordinate chunks__
 
     ---
 
-    [:octicons-arrow-right-24: Tiny coordinate chunks](tiny-coordinate-chunks.ipynb)
+    [:octicons-arrow-right-24: Tiny coordinate chunks](worst-practices/tiny-coordinate-chunks.ipynb)
 
 
 -   __Dispersed metadata__
 
     ---
 
-    [:octicons-arrow-right-24: Dispersed metadata](dispersed-metadata.ipynb)
+    [:octicons-arrow-right-24: Dispersed metadata](worst-practices/dispersed-metadata.ipynb)
 
 -   __Non-standardized metadata__
 
     ---
 
-    [:octicons-arrow-right-24: Non-standardized metadata](non-standardized-metadata.ipynb)
+    [:octicons-arrow-right-24: Non-standardized metadata](worst-practices/non-standardized-metadata.ipynb)
 
 
 -   __Bloated datatypes__
 
     ---
 
-    [:octicons-arrow-right-24: Bloated datatypes](bloated-datatypes.ipynb)
+    [:octicons-arrow-right-24: Bloated datatypes](worst-practices/bloated-datatypes.ipynb)
 
 
 </div>
@@ -55,25 +55,25 @@ The datacube worst practices guidebook is intended as an open, community-maintai
 
     ---
 
-    [:octicons-arrow-right-24: Default FSSpec Caching](fsspec-caching-defaults.md)
+    [:octicons-arrow-right-24: Default FSSpec Caching](worst-practices/fsspec-caching-defaults.md)
 
 -   __Default GDAL Config__
 
     ---
 
-    [:octicons-arrow-right-24: Default GDAL Config](gdal-defaults.md)
+    [:octicons-arrow-right-24: Default GDAL Config](worst-practices/gdal-defaults.md)
 
 -   __Default Xarray combine arguments__
 
     ---
 
-    [:octicons-arrow-right-24: Default Xarray combine arguments](xarray-combine-defaults.md)
+    [:octicons-arrow-right-24: Default Xarray combine arguments](worst-practices/xarray-combine-defaults.md)
 
 
 -   __Using old libraries__
 
     ---
 
-    [:octicons-arrow-right-24: Using old libraries](old-libraries.md)
+    [:octicons-arrow-right-24: Using old libraries](worst-practices/old-libraries.md)
 
 </div>
