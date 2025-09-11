@@ -1,52 +1,43 @@
-# Components of the TiTiler Ecosystem
+# Titiler Ecosystem Overview
 
-The TiTiler ecosystem is a comprehensive suite of Python tools for creating dynamic tile servers from geospatial datasets. The components are organized by their primary function:
+The TiTiler ecosystem is a comprehensive suite of Python tools for creating dynamic tile servers from geospatial datasets. The components are organized by their primary function and built upon a layered architecture that provides flexibility and specialization for different use cases.
 
-## Core TiTiler Framework
+## Architecture and Relationships
 
-**titiler.core** - Foundation libraries for creating FastAPI applications that serve dynamic tiles from Cloud Optimized GeoTIFFs (COGs) and SpatioTemporal Asset Catalog (STAC) items.
+The TiTiler ecosystem follows a layered architecture that promotes code reuse and specialization:
 
-**titiler.xarray** - Specialized extension for dynamically serving tiles from multi-dimensional datasets stored in Zarr or NetCDF formats.
+### Foundation Layer
+- **[rio-tiler](https://github.com/cogeotiff/rio-tiler)**: Core tile generation engine
+- **[titiler.core](https://github.com/developmentseed/titiler/tree/main/src/titiler/core)**: Base FastAPI framework and patterns
 
-**titiler.extensions** - Plugin system providing additional functionality for TiTiler factories, such as custom algorithms, authentication, and data processing extensions.
+### Extension Layer
+- **[titiler.xarray](https://github.com/developmentseed/titiler/tree/main/src/titiler/xarray)**: Multidimensional data support extending titiler.core
+- **[titiler.extensions](https://github.com/developmentseed/titiler/tree/main/src/titiler/extensions)**: Plugin system for custom functionality
+- **[titiler.mosaic](https://github.com/developmentseed/titiler/tree/main/src/titiler/mosaic)**: Multi-source tiling capabilities
 
-**titiler.mosaic** - Extension for dynamically serving tiles from multiple sources using the MosaicJSON specification.
+### Application Layer
+- **[titiler.application](https://github.com/developmentseed/titiler/tree/main/src/titiler/application)**: Reference implementation using titiler.core
+- **[titiler-multidim](https://github.com/developmentseed/titiler-multidim)**: Prototype application using titiler.xarray + optimizations
+- **[titiler-cmr](https://github.com/developmentseed/titiler-cmr)**: NASA-specific application using titiler.core + CMR integration
+- **[titiler-eopf](https://github.com/EOPF-Explorer/titiler-eopf)**: ESA-specific application using titiler.xarray + EOPF integration
 
-**titiler.application** - Complete reference implementation demonstrating a FastAPI application with full support for COGs, STAC items, and MosaicJSON mosaics.
+### Key Relationships
 
-## Specialized Applications
+#### **titiler.core → titiler.xarray**
 
-**titiler-cmr** - NASA-focused application that accepts Concept IDs and uses the Common Metadata Repository (CMR) to discover and serve associated granules as tiles.
+`titiler.xarray` extends the core framework with xarray-based readers and multidimensional dataset support, inheriting all core functionality while adding temporal and dimensional processing capabilities.
 
-**titiler-multidim** - Application specifically designed for multi-dimensional datasets, built on titiler.xarray for handling complex scientific data formats.
+#### **titiler.xarray → titiler-multidim / titiler-eopf applications**
 
-## Core Libraries
+Both `titiler-multidim` and `titiler.eopf` are built on `titiler.xarray`, leveraging its multidimensional capabilities while adding their own optimizations:
 
-**rio-tiler** - The foundational library that handles the core tile generation logic, dynamically creating map tiles from raster data sources including COGs.
+- `titiler-multidim` adds Redis caching, VEDA platform integration, and prototypes of optimizations
+- `titiler-eopf` adds EOPF-specific data structures, collection/item routing, and ESA workflow integrations
 
-**rio-cogeo** - Command-line tool and library for creating and validating Cloud Optimized GeoTIFFs, ensuring optimal performance for tile serving.
+#### **titiler.core → titiler-cmr application**
 
-**rio-viz** - Lightweight visualization tool for locally exploring and debugging raster datasets during development.
-
-## Infrastructure Components
-
-**cogeo-mosaic** - Serverless infrastructure toolkit (designed for AWS Lambda) that implements the MosaicJSON specification for creating and serving mosaicked tile sets.
-
-## Development Tools
-
-**tilebench** - Performance analysis tool that measures how many HTTP requests are required to generate tiles from different data sources, helping optimize tile server configurations.
-
-## Extensions and Plugins
-
-**rio-tiler-mvt** - Plugin that extends rio-tiler to generate Mapbox Vector Tiles (MVT) from raster data sources, enabling vector-based visualizations.
-
-## Standards and Specifications
-
-**MosaicJSON** - Open specification for creating spatial indexes that efficiently link multiple COGs to XYZ tile coordinates, enabling seamless mosaicking of large datasets.
-
-## Legacy Components
-
-**riotiler_mosaic** - **(Deprecated)** - Former rio-tiler plugin for creating tiles from multiple observations. This functionality has been integrated directly into rio-tiler and cogeo-mosaic.
+`titiler-cmr` is built directly on `titiler.core` rather than `titiler.xarray` due to the development timeline of the two projects. In the future, we anticipate
+`titiler-cmr` will depend on `titiler.xarray`, with progress tracked by [titiler-cmr issue #35](https://github.com/developmentseed/titiler-cmr/issues/35)
 
 ---
 

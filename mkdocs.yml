@@ -28,14 +28,15 @@ nav:
   - Datacube Visualization:
     - Overview: "visualization/overview.md"
     - Titiler:
-      - Titiler ecosystem overview: "visualization/titiler/titiler-ecosystem.md"
+      - Ecosystem overview: "visualization/titiler/overview.md"
       - Performance benchmarking:
         - Titiler-CMR tile generation: "visualization/titiler/titiler-cmr/titiler-cmr-benchmark.ipynb"
         - Titiler-CMR timeseries statistics: "visualization/titiler/titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
 
   - API Reference:
-    - "datacube-benchmark/api.md"
-    - "datacube-benchmark/titiler.md"
+    - Benchmarking:
+      - "api-reference/datacube-benchmark.md"
+      - "api-reference/titiler-benchmark.md"
 
 watch:
   - packages

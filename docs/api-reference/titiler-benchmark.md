@@ -1,4 +1,4 @@
-# Datacube tiling
+# Dynamic tiling
 
 ::: datacube_benchmark.tiling_benchmark_summary
 
