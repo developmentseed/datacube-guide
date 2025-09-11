@@ -8,13 +8,6 @@ from .create import Quantity
 from .config import Config
 from .query import benchmark_zarr_array, benchmark_access_patterns
 from .open import benchmark_dataset_open
-from .titiler_cmr_benchmark import (
-    benchmark_viewport,
-    benchmark_tileset,
-    benchmark_statistics,
-    tiling_benchmark_summary,
-    TiTilerCMRBenchmarker,
-)
 
 import numpy as np
 
@@ -27,11 +20,6 @@ __all__ = [
     "benchmark_zarr_array",
     "benchmark_access_patterns",
     "benchmark_dataset_open",
-    "TiTilerCMRBenchmarker",
-    "benchmark_viewport",
-    "benchmark_tileset",
-    "benchmark_statistics",
-    "tiling_benchmark_summary",
 ]
 
 

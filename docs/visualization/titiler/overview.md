@@ -37,7 +37,7 @@ Both `titiler-multidim` and `titiler.eopf` are built on `titiler.xarray`, levera
 #### **titiler.core → titiler-cmr application**
 
 `titiler-cmr` is built directly on `titiler.core` rather than `titiler.xarray` due to the development timeline of the two projects. In the future, we anticipate
-`titiler-cmr` will depend on `titiler.xarray`, with progress tracked by [titiler-cmr issue #35](https://github.com/developmentseed/titiler-cmr/issues/35)
+`titiler-cmr` will depend on `titiler.xarray`, with progress tracked by [titiler-cmr issue #35](https://github.com/developmentseed/titiler-cmr/issues/35).
 
 ---
 
