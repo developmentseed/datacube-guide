@@ -90,4 +90,5 @@ tests/.hypothesis
 .hypothesis/
 
 docs/_site
+site
 .mypy_cache

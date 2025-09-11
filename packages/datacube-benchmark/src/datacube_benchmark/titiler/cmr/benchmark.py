@@ -23,7 +23,7 @@ import pandas as pd
 import psutil
 from geojson_pydantic import Feature
 
-from datacube_benchmark.tiling import (
+from datacube_benchmark.titiler import (
     BaseBenchmarker,
     DatasetParams,
     create_bbox_feature,

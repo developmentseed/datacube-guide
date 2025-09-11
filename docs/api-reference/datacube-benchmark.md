@@ -10,10 +10,4 @@
 
 ::: datacube_benchmark.benchmark_access_patterns
 
-::: datacube_benchmark.benchmark_viewport
-
-::: datacube_benchmark.benchmark_tileset
-
-::: datacube_benchmark.benchmark_statistics
-
 ::: datacube_benchmark.types.TARGET_SHAPES

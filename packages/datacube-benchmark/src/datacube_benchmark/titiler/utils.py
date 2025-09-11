@@ -4,19 +4,6 @@ These are reusable helper functions for map tiling that are independent of any s
 benchmarking or rendering workflow. They are primarily exercised by
 TiTiler-CMR benchmarking code, but are also applicable to other contexts where
 tile math and asynchronous HTTP fetching are needed.
-
-See Also
---------
-get_surrounding_tiles : Compute (x, y) tile coordinates forming a rectangular
-    viewport centered on a given tile index at a specific zoom level.
-get_tileset_tiles : Enumerate all tiles for a complete zoom level within
-    geographic bounds.
-fetch_tile : Asynchronously fetch one or more tiles for a given (z, x, y) from
-    a set of TileJSON templates, returning status, latency, and size metadata.
-create_bbox_feature : Build a GeoJSON Feature representing a bounding box from
-    (minx, miny, maxx, maxy) coordinates.
-BaseBenchmarker : Base class with shared functionality for TiTiler benchmarking
-    (system info, HTTP client setup, and minimal result processing).
 """
 
 from __future__ import annotations
@@ -30,7 +17,7 @@ import psutil
 import pandas as pd
 from geojson_pydantic import Feature, Polygon
 
-from .titiler_cmr_params import DatasetParams
+from .config import DatasetParams
 
 
 def get_surrounding_tiles(
