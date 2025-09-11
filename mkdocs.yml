@@ -4,6 +4,8 @@ repo_name: datacube-guide
 repo_url: https://github.com/developmentseed/datacube-guide
 site_author: Max Jones
 docs_dir: docs
+site_url: "https://developmentseed.org/datacube-guide/"
+use_directory_urls: false
 
 extra:
   version:
