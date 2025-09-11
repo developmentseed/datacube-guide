@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Comment out unless for testing
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
