@@ -19,3 +19,8 @@ uv run --with jupyter jupyter lab
 ## License
 
 `datacube-guide` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+
+## Acknowledgements
+
+The Datacube Guide was initiated in partnership with the Microsoft Planetary Computer team. We recommend checking out the wonderful work going on as part of the [Microsoft Planetary Computer Pro service](https://learn.microsoft.com/en-us/azure/planetary-computer/) as well as the [Open Planetary Computer Data Catalog](https://planetarycomputer.microsoft.com/). We greatly appreciate Microsoft's dedication to supporting open resources and building impactful geospatial services.
+
