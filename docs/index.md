@@ -77,3 +77,7 @@ The datacube worst practices guidebook is intended as an open, community-maintai
     [:octicons-arrow-right-24: Using old libraries](worst-practices/old-libraries.md)
 
 </div>
+
+## Acknowledgements
+
+The Datacube Guide was initiated in partnership with the Microsoft Planetary Computer team. We recommend checking out the wonderful work going on as part of the [Microsoft Planetary Computer Pro service](https://learn.microsoft.com/en-us/azure/planetary-computer/) as well as the [Open Planetary Computer Data Catalog](https://planetarycomputer.microsoft.com/). We greatly appreciate Microsoft's dedication to supporting open resources and building impactful geospatial services.
