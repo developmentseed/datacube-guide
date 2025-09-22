@@ -178,9 +178,7 @@ async def fetch_tile(
             error_text = response.text
             print("~~~~~~~~~~~~~~~~ ERROR FETCHING TILE ~~~~~~~~~~~~~~~~")
             print(f"URL:    {response.request.url}")
-            print(
-                f"Error:  {response.status_code}"
-            )  # <-- status + reason phrase
+            print(f"Error:  {response.status_code}")  # <-- status + reason phrase
             print(f":   {response.text}")
             rows.append(
                 {

@@ -37,6 +37,7 @@ from datacube_benchmark.titiler import (
 # top level benchmarking compatibility check
 # ---------------------------------------
 
+
 async def check_titiler_cmr_compatibility(
     endpoint: str,
     dataset: DatasetParams,
@@ -45,7 +46,7 @@ async def check_titiler_cmr_compatibility(
     max_connections: int = 10,
     max_connections_per_host: int = 10,
     raise_on_incompatible: bool = False,
-    bounds_fraction: float = 0.05, 
+    bounds_fraction: float = 0.05,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """
@@ -62,7 +63,7 @@ async def check_titiler_cmr_compatibility(
     raise_on_incompatible : bool, optional
         If True, raise RuntimeError when compatible == False.
     bounds_fraction : float, optional
-        Fraction of total dataset area to use for random bounds compatibility check 
+        Fraction of total dataset area to use for random bounds compatibility check
         (default: 0.05 = 5% of area). Only used when geometry is not provided.
 
     Returns
@@ -79,9 +80,13 @@ async def check_titiler_cmr_compatibility(
         max_connections=max_connections,
         max_connections_per_host=max_connections_per_host,
     )
-    result = await benchmarker.check_compatibility(dataset, bounds_fraction=bounds_fraction, **kwargs)
+    result = await benchmarker.check_compatibility(
+        dataset, bounds_fraction=bounds_fraction, **kwargs
+    )
     if raise_on_incompatible and result.get("success") and not result.get("compatible"):
-        reasons = result.get("details", {}).get("reasons") or result.get("details", {}).get("messages")
+        reasons = result.get("details", {}).get("reasons") or result.get(
+            "details", {}
+        ).get("messages")
         raise RuntimeError(f"Dataset not compatible: {reasons or 'no reason provided'}")
     return result
 
@@ -473,13 +478,12 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
 
         return self._process_results(all_rows)
 
-
     async def check_compatibility(
-        self, 
-        dataset: DatasetParams, 
+        self,
+        dataset: DatasetParams,
         geometry: Optional[Union[Feature, Dict[str, Any]]] = None,
         bounds_fraction: float = 0.05,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Check dataset compatibility with TiTiler-CMR `/compatibility` endpoint.
@@ -527,9 +531,13 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                             "No geometry provided and no bounds available from TileJSON"
                         )
                     geometry = create_bbox_feature(*bounds)
-                    random_bounds = generate_random_bounds_within(bounds, fraction=bounds_fraction)  # 5% of area
+                    random_bounds = generate_random_bounds_within(
+                        bounds, fraction=bounds_fraction
+                    )  # 5% of area
                     geometry = create_bbox_feature(*random_bounds)
-                    print(f"Using random bounds for compatibility check: {random_bounds}")
+                    print(
+                        f"Using random bounds for compatibility check: {random_bounds}"
+                    )
 
                 # 3) Run a small statistics preview to ensure server-side flow works
                 stats_result = await self._fetch_statistics(
@@ -552,15 +560,15 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                 "n_timesteps": 0,
                 "url": str(response.request.url),
                 "statistics": {},
-                "error": f"HTTP {status_code}: {error_text}"
+                "error": f"HTTP {status_code}: {error_text}",
             }
-            
+
         except Exception as ex:
             print(f"Compatibility check failed: {ex}")
             issue_detected = True
             stats_result = {"success": False, "error": str(ex)}
 
-        print (stats_result)
+        print(stats_result)
         if stats_result.get("success"):
             print(f"Statistics returned {len(stats_result['statistics'])} timesteps")
             compatibility_status = "compatible"
@@ -569,16 +577,20 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             print(f"Statistics request failed: {stats_result.get('error')}")
             issue_detected = True
 
-            compatibility_status = "compatible" if (n_timesteps > 0 and not issue_detected) else "issues_detected"
-        
+            compatibility_status = (
+                "compatible"
+                if (n_timesteps > 0 and not issue_detected)
+                else "issues_detected"
+            )
+
         return {
             "concept_id": dataset.concept_id,
             "backend": dataset.backend,
             "n_timesteps": n_timesteps,
             "tilejson_bounds": tilejson_info.get("bounds"),
             "statistics": (
-                self._statistics_to_dataframe(stats_result.get("statistics", {})) 
-                if stats_result.get("success") 
+                self._statistics_to_dataframe(stats_result.get("statistics", {}))
+                if stats_result.get("success")
                 else pd.DataFrame()
             ),
             "compatibility": compatibility_status,
@@ -613,9 +625,7 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         self._log_header("Statistics Benchmark", dataset)
         async with self._create_http_client() as client:
             if geometry is None:
-                raise ValueError(
-                    "No geometry provided!"
-                )
+                raise ValueError("No geometry provided!")
             return await self._fetch_statistics(
                 client=client, dataset=dataset, geometry=geometry, **kwargs
             )
@@ -743,8 +753,6 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
         -------
         (payload, elapsed_s, status_code)
         """
-        timeout = self.timeout_s
-
         t0 = time.perf_counter()
         try:
             if method.upper() == "GET":
@@ -804,42 +812,41 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
 
 
 def generate_random_bounds_within(
-    parent_bounds: List[float], 
-    fraction: float = 0.1
+    parent_bounds: List[float], fraction: float = 0.1
 ) -> List[float]:
     """
     Generate random bounds within parent bounds.
-    
+
     Parameters
     ----------
     parent_bounds : List[float]
         Parent bounding box [min_lon, min_lat, max_lon, max_lat]
     fraction : float, optional
         Approximate fraction of parent area to cover (default: 0.1 = 10%)
-    
+
     Returns
     -------
     List[float]
         Random bounding box [min_lon, min_lat, max_lon, max_lat] within parent
     """
     min_lon, min_lat, max_lon, max_lat = parent_bounds
-    
+
     # Calculate dimensions
     lon_range = max_lon - min_lon
     lat_range = max_lat - min_lat
-    
+
     # Calculate size of random box (square root to get linear dimension from area fraction)
-    scale = fraction ** 0.5
+    scale = fraction**0.5
     random_lon_size = lon_range * scale
     random_lat_size = lat_range * scale
-    
+
     # Generate random center point with enough margin for the box
     margin_lon = random_lon_size / 2
     margin_lat = random_lat_size / 2
-    
+
     center_lon = random.uniform(min_lon + margin_lon, max_lon - margin_lon)
     center_lat = random.uniform(min_lat + margin_lat, max_lat - margin_lat)
-    
+
     # Create random bounds around the center
     random_bounds = [
         center_lon - margin_lon,  # min_lon
@@ -847,7 +854,7 @@ def generate_random_bounds_within(
         center_lon + margin_lon,  # max_lon
         center_lat + margin_lat,  # max_lat
     ]
-    
+
     return random_bounds
 
 
@@ -871,7 +878,9 @@ def tiling_benchmark_summary(df):
     """
     for col in ["response_time_sec"]:
         if col not in df.columns:
-            raise KeyError(f"Required column '{col}' not found. Available columns: {list(df.columns)}")
+            raise KeyError(
+                f"Required column '{col}' not found. Available columns: {list(df.columns)}"
+            )
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     summary = (
@@ -900,12 +909,12 @@ def tiling_benchmark_summary(df):
 
 
 __all__ = [
+    "check_titiler_cmr_compatibility",
     "benchmark_viewport",
     "benchmark_tileset",
     "benchmark_statistics",
     "tiling_benchmark_summary",
     "TiTilerCMRBenchmarker",
-    "check_titiler_cmr_compatibility",
 ]
 
 
@@ -980,7 +989,7 @@ if __name__ == "__main__":
             max_zoom=18,
             timeout_s=60.0,
             max_concurrent=32,
-        ) 
+        )
 
         print(f"Tileset results: {len(df_tileset)} tile requests")
         print(tiling_benchmark_summary(df_tileset))
@@ -1003,15 +1012,14 @@ if __name__ == "__main__":
 
         print("\n=== Example 5: Compatibility Test ===")
 
-
         result = await check_titiler_cmr_compatibility(
             endpoint=endpoint,
             dataset=ds_xarray,
             bounds_fraction=0.01,
-        ) 
+        )
 
         print("Compatibility result:")
         print(f"{result}")
-        print (result['compatibility'])
+        print(result["compatibility"])
 
     asyncio.run(main())
