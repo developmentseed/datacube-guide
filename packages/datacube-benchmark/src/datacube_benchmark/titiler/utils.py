@@ -179,7 +179,7 @@ async def fetch_tile(
             print("~~~~~~~~~~~~~~~~ ERROR FETCHING TILE ~~~~~~~~~~~~~~~~")
             print(f"URL:    {response.request.url}")
             print(
-                f"Error:  {response.status_code} {response.status_reason}"
+                f"Error:  {response.status_code}"
             )  # <-- status + reason phrase
             print(f":   {response.text}")
             rows.append(
@@ -187,7 +187,7 @@ async def fetch_tile(
                     "zoom": z,
                     "x": x,
                     "y": y,
-                    "status_code": None,
+                    "status_code": status_code,
                     "ok": False,
                     "no_data": False,
                     "is_error": True,

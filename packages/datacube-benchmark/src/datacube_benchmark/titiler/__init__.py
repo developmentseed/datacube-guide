@@ -12,6 +12,7 @@ from .cmr.benchmark import (
     benchmark_statistics,
     tiling_benchmark_summary,
     TiTilerCMRBenchmarker,
+    check_titiler_cmr_compatibility,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "create_bbox_feature",
     "DatasetParams",
     "BaseBenchmarker",
+    "check_titiler_cmr_compatibility",
 ]
