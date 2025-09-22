@@ -1,5 +1,7 @@
 # Dynamic tiling
 
+::: datacube_benchmark.titiler.check_titiler_cmr_compatibility
+
 ::: datacube_benchmark.titiler.tiling_benchmark_summary
 
 ::: datacube_benchmark.titiler.TiTilerCMRBenchmarker

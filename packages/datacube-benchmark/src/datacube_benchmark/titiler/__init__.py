@@ -7,6 +7,7 @@ from .utils import (
 )
 from .config import DatasetParams
 from .cmr.benchmark import (
+    check_titiler_cmr_compatibility,
     benchmark_viewport,
     benchmark_tileset,
     benchmark_statistics,
@@ -26,4 +27,5 @@ __all__ = [
     "create_bbox_feature",
     "DatasetParams",
     "BaseBenchmarker",
+    "check_titiler_cmr_compatibility",
 ]
