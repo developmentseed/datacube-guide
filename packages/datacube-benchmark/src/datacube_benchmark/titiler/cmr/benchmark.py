@@ -433,6 +433,8 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
                                 "x": x,
                                 "y": y,
                                 "is_error": True,
+                                "ok": False,
+                                "status_code": None,
                                 "error_text": f"{type(ex).__name__}: {ex}",
                             }
                         ]
@@ -568,7 +570,6 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             issue_detected = True
             stats_result = {"success": False, "error": str(ex)}
 
-        print(stats_result)
         if stats_result.get("success"):
             print(f"Statistics returned {len(stats_result['statistics'])} timesteps")
             compatibility_status = "compatible"
