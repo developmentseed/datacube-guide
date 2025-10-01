@@ -31,7 +31,8 @@ nav:
     - Overview: "visualization/overview.md"
     - Titiler:
       - Ecosystem overview: "visualization/titiler/overview.md"
-      - Performance benchmarking:
+      - Performance benchmarking and Compatibility Testing:
+        - Titiler-CMR Compatibility Testing: "visualization/titiler/titiler-cmr/titiler-cmr-compatibility.ipynb"
         - Titiler-CMR tile generation: "visualization/titiler/titiler-cmr/titiler-cmr-benchmark.ipynb"
         - Titiler-CMR timeseries statistics: "visualization/titiler/titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
 
