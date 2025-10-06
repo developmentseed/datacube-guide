@@ -35,6 +35,8 @@ nav:
         - Titiler-CMR Compatibility Testing: "visualization/titiler/titiler-cmr/titiler-cmr-compatibility.ipynb"
         - Titiler-CMR tile generation: "visualization/titiler/titiler-cmr/titiler-cmr-benchmark.ipynb"
         - Titiler-CMR timeseries statistics: "visualization/titiler/titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
+        - Titiler-CMR all concept IDs: "visualization/titiler/titiler-cmr/titiler-cmr-all/01-concept_var_finder.ipynb"
+        - Titiler-CMR Compatibility Runner: "visualization/titiler/titiler-cmr/titiler-cmr-all/02-compat_runner.ipynb"
 
   - API Reference:
     - Benchmarking:
