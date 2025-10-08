@@ -56,6 +56,7 @@ dev-dependencies = [
     "pytest-mypy-plugins>=3.2.0",
     "pytest>=8.3.3",
     "ruff>=0.12.0",
+    "ipywidgets>=8.1.7",
 ]
 
 [tool.mypy]

@@ -31,12 +31,14 @@ nav:
     - Overview: "visualization/overview.md"
     - Titiler:
       - Ecosystem overview: "visualization/titiler/overview.md"
-      - Performance benchmarking and Compatibility Testing:
-        - Titiler-CMR Compatibility Testing: "visualization/titiler/titiler-cmr/titiler-cmr-compatibility.ipynb"
-        - Titiler-CMR tile generation: "visualization/titiler/titiler-cmr/titiler-cmr-benchmark.ipynb"
-        - Titiler-CMR timeseries statistics: "visualization/titiler/titiler-cmr/titiler-cmr-statistics-benchmark.ipynb"
-        - Titiler-CMR all concept IDs: "visualization/titiler/titiler-cmr/titiler-cmr-all/01-concept_var_finder.ipynb"
-        - Titiler-CMR Compatibility Runner: "visualization/titiler/titiler-cmr/titiler-cmr-all/02-compat_runner.ipynb"
+      - Titiler-CMR:
+        - Performance benchmarking:
+          - "visualization/titiler/titiler-cmr/benchmark-tiles.ipynb"
+          - Timeseries statistics: "visualization/titiler/titiler-cmr/benchmark-stats.ipynb"
+        - Compatibility testing:
+          - "visualization/titiler/titiler-cmr/compatibility.ipynb"
+          - "visualization/titiler/titiler-cmr/find-netcdf4-datasets.ipynb"
+          - "visualization/titiler/titiler-cmr/test-netcdf4-datasets.ipynb"
 
   - API Reference:
     - Benchmarking:
