@@ -39,6 +39,7 @@ nav:
           - "visualization/titiler/titiler-cmr/compatibility.ipynb"
           - "visualization/titiler/titiler-cmr/find-netcdf4-datasets.ipynb"
           - "visualization/titiler/titiler-cmr/test-netcdf4-datasets.ipynb"
+          - "visualization/titiler/titiler-cmr/summarize-netcdf4-results.ipynb"
 
   - API Reference:
     - Benchmarking:
