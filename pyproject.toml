@@ -10,31 +10,8 @@ dependencies = [
     "matplotlib>=3.10.3",
 ]
 
-[tool.uv.sources]
-datacube_benchmark = { workspace = true }
-zarr = { git = "https://github.com/zarr-developers/zarr-python" }
-
-[tool.uv.workspace]
-members = ["packages/*"]
-
-[tool.numpydoc_validation]
-# See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
-checks = [
-    "GL06",
-    "GL07",
-    # Currently broken; see https://github.com/numpy/numpydoc/issues/573
-    # "GL09",
-    "GL10",
-    "SS02",
-    "SS04",
-    "PR02",
-    "PR03",
-    "PR05",
-    "PR06",
-]
-
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "aiohttp-retry>=2.9.1",
     "aiohttp>=3.11.13",
     "azure-identity>=1.21.0",
@@ -57,6 +34,29 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "ruff>=0.12.0",
     "ipywidgets>=8.1.7",
+]
+
+[tool.uv.sources]
+datacube_benchmark = { workspace = true }
+zarr = { git = "https://github.com/zarr-developers/zarr-python" }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.numpydoc_validation]
+# See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
+checks = [
+    "GL06",
+    "GL07",
+    # Currently broken; see https://github.com/numpy/numpydoc/issues/573
+    # "GL09",
+    "GL10",
+    "SS02",
+    "SS04",
+    "PR02",
+    "PR03",
+    "PR05",
+    "PR06",
 ]
 
 [tool.mypy]
