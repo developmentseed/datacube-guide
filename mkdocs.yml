@@ -7,6 +7,10 @@ docs_dir: docs
 site_url: "https://developmentseed.org/datacube-guide/"
 use_directory_urls: false
 
+watch:
+  - docs
+  - overrides
+
 extra:
   version:
     alias: true
@@ -29,17 +33,11 @@ nav:
       - Using old libraries: "worst-practices/old-libraries.md"
   - Datacube Visualization:
     - Overview: "visualization/overview.md"
+    - Dynamic tiling comparison: "visualization/ecosystem-comparison.md"
     - Titiler:
       - Ecosystem overview: "visualization/titiler/overview.md"
-      - Titiler-CMR:
-        - Performance benchmarking:
-          - "visualization/titiler/titiler-cmr/benchmark-tiles.ipynb"
-          - Timeseries statistics: "visualization/titiler/titiler-cmr/benchmark-stats.ipynb"
-        - Compatibility testing:
-          - "visualization/titiler/titiler-cmr/compatibility.ipynb"
-          - "visualization/titiler/titiler-cmr/find-netcdf4-datasets.ipynb"
-          - "visualization/titiler/titiler-cmr/test-netcdf4-datasets.ipynb"
-          - "visualization/titiler/titiler-cmr/summarize-netcdf4-results.ipynb"
+    - XPublish:
+      - Ecosystem overview: "visualization/xpublish/overview.md"
 
   - API Reference:
     - Benchmarking:
@@ -51,16 +49,10 @@ nav:
       - "api-reference/titiler/titiler-cmr.md"
       - "api-reference/titiler/titiler-multidim.md"
 
-watch:
-  - packages
-  - docs
-  - mkdocs.yml
-  - pyproject.toml
-
 theme:
   language: en
   name: material
-  custom_dir: docs/overrides
+  custom_dir: overrides
   # logo: assets/logo_no_text.png
   palette:
     # Palette toggle for automatic mode
@@ -94,7 +86,6 @@ theme:
     - content.code.annotate
     - content.code.copy
     - navigation.indexes
-    - navigation.instant
     - navigation.tracking
     - search.suggest
     - search.share
@@ -123,7 +114,6 @@ plugins:
             show_source: false
             show_symbol_type_toc: true
             signature_crossrefs: true
-
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://docs.xarray.dev/en/stable/objects.inv
