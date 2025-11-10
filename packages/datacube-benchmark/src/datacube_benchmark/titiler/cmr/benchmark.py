@@ -571,18 +571,16 @@ class TiTilerCMRBenchmarker(BaseBenchmarker):
             stats_result = {"success": False, "error": str(ex)}
 
         if stats_result.get("success"):
-            print(f"Statistics returned {len(stats_result['statistics'])} timesteps")
-            compatibility_status = "compatible"
-
+            n_timesteps_stats = len(stats_result['statistics'])
+            print(f"Statistics returned {n_timesteps_stats} timesteps")
+            compatibility_status = (
+                "compatible"
+                if (n_timesteps_stats > 0 and not issue_detected)
+                else "issues_detected"
+            )
         else:
             print(f"Statistics request failed: {stats_result.get('error')}")
             issue_detected = True
-
-            compatibility_status = (
-                "compatible"
-                if (n_timesteps > 0 and not issue_detected)
-                else "issues_detected"
-            )
 
         return {
             "concept_id": dataset.concept_id,
