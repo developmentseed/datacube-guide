@@ -31,15 +31,6 @@ nav:
     - Overview: "visualization/overview.md"
     - Titiler:
       - Ecosystem overview: "visualization/titiler/overview.md"
-      - Titiler-CMR:
-        - Performance benchmarking:
-          - "visualization/titiler/titiler-cmr/benchmark-tiles.ipynb"
-          - Timeseries statistics: "visualization/titiler/titiler-cmr/benchmark-stats.ipynb"
-        - Compatibility testing:
-          - "visualization/titiler/titiler-cmr/compatibility.ipynb"
-          - "visualization/titiler/titiler-cmr/find-netcdf4-datasets.ipynb"
-          - "visualization/titiler/titiler-cmr/test-netcdf4-datasets.ipynb"
-          - "visualization/titiler/titiler-cmr/summarize-netcdf4-results.ipynb"
 
   - API Reference:
     - Benchmarking:
