@@ -42,7 +42,6 @@ nav:
       - "api-reference/titiler/titiler-multidim.md"
 
 watch:
-  - packages
   - docs
   - mkdocs.yml
   - pyproject.toml

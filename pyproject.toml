@@ -13,9 +13,6 @@ dependencies = [
 datacube_benchmark = { workspace = true }
 zarr = { git = "https://github.com/zarr-developers/zarr-python" }
 
-[tool.uv.workspace]
-members = ["packages/*"]
-
 [tool.numpydoc_validation]
 # See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
 checks = [
