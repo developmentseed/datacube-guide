@@ -1,0 +1,51 @@
+[project]
+name = "datacube-benchmark"
+version = "0.1.0"
+description = "Utilities to benchmark datacubes with various formats, compressions, and chunking schemes."
+readme = "README.md"
+authors = [
+    { name = "Max Jones", email = "14077947+maxrjones@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "arro3-core>=0.5.1",
+    "dask>=2025.5.1",
+    "geojson-pydantic>=2.0.0",
+    "earthaccess~=0.11.0",
+    "h5netcdf~=1.1.0",
+    "hdf5plugin>=5.1.0",
+    "httpx>=0.28.1",
+    "morecantile>=6.2.0",
+    "numcodecs>=0.16.1",
+    "obstore>=0.6.0",
+    "pint>=0.24.4",
+    "psutil>=7.0.0",
+    "pyarrow>=20.0.0",
+    "rich>=14.0.0",
+    "s3fs>=0.4.2",
+    "xarray>=2025.6.1",
+    "zarr>=3.0.8",
+]
+
+[project.scripts]
+datacube-benchmark = "datacube_benchmark:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.numpydoc_validation]
+# See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
+checks = [
+    "GL06",
+    "GL07",
+    # Currently broken; see https://github.com/numpy/numpydoc/issues/573
+    # "GL09",
+    "GL10",
+    "SS02",
+    "SS04",
+    "PR02",
+    "PR03",
+    "PR05",
+    "PR06",
+]
