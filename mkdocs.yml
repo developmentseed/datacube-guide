@@ -35,7 +35,6 @@ nav:
   - API Reference:
     - Benchmarking:
       - "api-reference/datacube-benchmark.md"
-      - "api-reference/titiler-benchmark.md"
     - Titiler:
       - "api-reference/titiler/index.md"
       - "api-reference/titiler/titiler-core.md"
