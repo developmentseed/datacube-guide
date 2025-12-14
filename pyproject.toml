@@ -1,7 +1,7 @@
 [project]
 name = "datacube-guide"
 version = "0.1.0"
-description = "Add your description here"
+description = "Helping people avoid mistakes when producing and using datacubes"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
