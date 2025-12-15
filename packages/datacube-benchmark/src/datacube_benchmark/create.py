@@ -322,7 +322,7 @@ def create_or_open_zarr_store(
     obstore_kwargs: dict[str, Any] = (
         {"credential_provider": config.credential_provider}
         if config.credential_provider
-        else {}
+        else {"skip_signature": True}
     )
     object_store = obs.store.from_url(url, **obstore_kwargs)
     if config.create_data:
