@@ -15,31 +15,42 @@ extra:
 nav:
   - "index.md"
   - Datacube Worst Practices:
-    - Common production gotchas:
-      - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
-      - Massive data chunks: "worst-practices/massive-chunks.ipynb"
-      - Tiny coordinate chunks: "worst-practices/tiny-coordinate-chunks.ipynb"
-      - Dispersed metadata: "worst-practices/dispersed-metadata.ipynb"
-      - Non-standardized metadata: "worst-practices/non-standardized-metadata.ipynb"
-      - Bloated datatypes: "worst-practices/bloated-datatypes.ipynb"
-    - Common usage gotchas:
-      - Default Xarray combine arguments: "worst-practices/xarray-combine-defaults.md"
-      - Default FSSpec caching arguments: "worst-practices/fsspec-caching-defaults.md"
-      - Default GDAL config: "worst-practices/gdal-defaults.md"
-      - Using old libraries: "worst-practices/old-libraries.md"
+      - Common production gotchas:
+          - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
+          - Massive data chunks: "worst-practices/massive-chunks.ipynb"
+          - Tiny coordinate chunks: "worst-practices/tiny-coordinate-chunks.ipynb"
+          - Dispersed metadata: "worst-practices/dispersed-metadata.ipynb"
+          - Non-standardized metadata: "worst-practices/non-standardized-metadata.ipynb"
+          - Bloated datatypes: "worst-practices/bloated-datatypes.ipynb"
+      - Common usage gotchas:
+          - Default Xarray combine arguments: "worst-practices/xarray-combine-defaults.md"
+          - Default FSSpec caching arguments: "worst-practices/fsspec-caching-defaults.md"
+          - Default GDAL config: "worst-practices/gdal-defaults.md"
+          - Using old libraries: "worst-practices/old-libraries.md"
   - Datacube Visualization:
-    - Overview: "visualization/overview.md"
-    - Titiler:
-      - Ecosystem overview: "visualization/titiler/overview.md"
+      - Overview: "visualization/overview.md"
+      - Dynamic tilers:
+          - Titiler:
+              - Ecosystem overview: "visualization/titiler/overview.md"
+              - APIs:
+                  - "visualization/titiler/apis/index.md"
+                  - "visualization/titiler/apis/titiler-core.md"
+                  - "visualization/titiler/apis/titiler-cmr.md"
+                  - "visualization/titiler/apis/titiler-multidim.md"
+          - Xpublish-tiles: "visualization/xpublish-tiles.md"
+      - Rendering layers:
+          - Carbonplan-maps: "visualization/carbonplan-maps.md"
+          - Deck.gl-raster-layer: "visualization/deck.gl-raster.md"
+          - Numeric-data-layer: "visualization/zarr-layer.md"
+          - Zarr-cesium: "visualization/zarr-cesium.md"
+          - Zarr-gl: "visualization/zarr-gl.md"
+          - Zarr-layer: "visualization/zarr-layer.md"
+      - Applications:
+          - Browzarr: "visualization/browzarr.md"
 
   - API Reference:
-    - Benchmarking:
-      - "api-reference/datacube-benchmark.md"
-    - Titiler:
-      - "api-reference/titiler/index.md"
-      - "api-reference/titiler/titiler-core.md"
-      - "api-reference/titiler/titiler-cmr.md"
-      - "api-reference/titiler/titiler-multidim.md"
+      - Benchmarking:
+          - "api-reference/datacube-benchmark.md"
 
 watch:
   - packages
@@ -123,7 +134,6 @@ plugins:
             - https://developmentseed.org/obstore/latest/objects.inv
             - https://pint.readthedocs.io/en/stable/objects.inv
             - https://pandas.pydata.org/docs/objects.inv
-
 
 markdown_extensions:
   - admonition
