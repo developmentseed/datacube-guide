@@ -51,6 +51,7 @@ nav:
   - API Reference:
       - Benchmarking:
           - "api-reference/datacube-benchmark.md"
+  - Related Guides: "related.md"
 
 watch:
   - packages
