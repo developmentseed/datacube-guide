@@ -40,8 +40,8 @@ nav:
           - Xpublish-tiles: "visualization/xpublish-tiles.md"
       - Rendering layers:
           - Carbonplan-maps: "visualization/carbonplan-maps.md"
-          - Deck.gl-raster-layer: "visualization/deck.gl-raster.md"
-          - Numeric-data-layer: "visualization/zarr-layer.md"
+          - Deck.gl-raster: "visualization/deck.gl-raster.md"
+          - Numeric-data-layer: "visualization/numeric-data-layer.md"
           - Zarr-cesium: "visualization/zarr-cesium.md"
           - Zarr-gl: "visualization/zarr-gl.md"
           - Zarr-layer: "visualization/zarr-layer.md"
@@ -51,6 +51,7 @@ nav:
   - API Reference:
       - Benchmarking:
           - "api-reference/datacube-benchmark.md"
+  - Related Guides: "related.md"
 
 watch:
   - packages
