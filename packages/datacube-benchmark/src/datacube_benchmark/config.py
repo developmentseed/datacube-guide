@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import zarr
+import zarr.codecs
 
 
 @dataclass
