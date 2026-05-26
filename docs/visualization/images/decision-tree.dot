@@ -62,9 +62,9 @@ digraph DecisionTree {
     Q3a -> Brow [label="3D volumetric\nor general 2D"]
     Q3a -> Grid [label="Climate-model\nnative grid"]
 
-    Q4 -> Deck [label="deck.gl"]
+    Q4 -> Deck [label="deck.gl\n(optionally with a\nMapLibre/Mapbox, Google Maps,\nor other basemap)"]
     Q4 -> Ces  [label="CesiumJS"]
-    Q4 -> ZL   [label="MapLibre/Mapbox"]
+    Q4 -> ZL   [label="MapLibre/Mapbox,\nno deck.gl dependency"]
 
     // Legend (subgraph cluster)
     subgraph cluster_legend {
