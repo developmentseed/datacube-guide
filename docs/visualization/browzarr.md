@@ -29,7 +29,7 @@ The data pipeline is normalize-to-uint8 then sample. Raw float values are scaled
 
 ## Zarr handling
 
-Reads use zarrita 0.6.x. An LRU cache (`ZarrLoaderLRU.ts`) holds recently accessed chunks. Geographic datasets get latitude and longitude bounds passed as shader uniforms, and the `useCoordBounds()` hook computes UV mapping for the sphere render mode. There is no GeoZarr support, no tile pyramid, no projection beyond geographic lat/lon, and no basemap concept; the Earth, when present, is just a textured sphere.
+Reads use zarrita. An LRU cache (`ZarrLoaderLRU.ts`) holds recently accessed chunks. Geographic datasets get latitude and longitude bounds passed as shader uniforms, and the `useCoordBounds()` hook computes UV mapping for the sphere render mode. There is no GeoZarr support, no tile pyramid, no projection beyond geographic lat/lon, and no basemap concept; the Earth, when present, is just a textured sphere.
 
 ## Where it fits
 

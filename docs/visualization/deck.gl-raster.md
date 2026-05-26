@@ -9,7 +9,7 @@ GPU-accelerated raster visualization for deck.gl, with backends for both Cloud-O
 - **Map host** — deck.gl (typically with MapLibre GL, Mapbox GL, or Google Maps as the basemap)
 - **Render API** — WebGL2 via luma.gl shader modules
 - **Zarr versions** — v3 (in the current `@developmentseed/deck.gl-zarr` package)
-- **Conventions** — GeoZarr (multiscales, proj, CRS as EPSG, WKT2, or PROJJSON)
+- **Conventions** — GeoZarr (spatial, multiscales, proj)
 
 ## What it does
 
@@ -29,10 +29,10 @@ Reads use zarrita. Zarr v2, OME-NGFF, and CF conventions are listed as future wo
 
 ## Where it fits
 
-Choose deck.gl-raster when the wider scene is already deck.gl, when you want a single rendering stack across COG and Zarr, or when you need GeoZarr metadata handling out of the box. The cost is the deck.gl dependency and the assumption of a tile-pyramid view of the data; this is not the right tool for in-browser volumetric exploration of a Zarr cube.
+Choose deck.gl-raster when the wider scene is already deck.gl, when you want a single rendering stack across COG and Zarr, or when you need GeoZarr metadata handling out of the box. The cost is the deck.gl dependency and the assumption of a tile-pyramid view of the data; it is not currently aimed at in-browser volumetric exploration of a Zarr cube, though the generic architecture does not preclude adding it.
 
 ## Links
 
 - Source: [developmentseed/deck.gl-raster](https://github.com/developmentseed/deck.gl-raster)
-- Key packages: `@developmentseed/raster-layer`, `@developmentseed/deck.gl-zarr`, `@developmentseed/geozarr`, `@developmentseed/raster-reproject`
+- Key packages: `@developmentseed/raster-layer`, `@developmentseed/deck.gl-zarr`, `@developmentseed/geozarr`
 - Related: deck.gl, luma.gl, [zarrita](https://github.com/manzt/zarrita.js)

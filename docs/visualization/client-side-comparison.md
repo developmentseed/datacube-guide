@@ -11,17 +11,17 @@ The four libraries below are ordered roughly by host: deck.gl, MapLibre/Mapbox (
 | | [deck.gl-raster](deck.gl-raster.md) | [@carbonplan/maps](carbonplan-maps.md) | [zarr-layer](zarr-layer.md) | [zarr-cesium](zarr-cesium.md) |
 |---|---|---|---|---|
 | Primary author | Development Seed | CarbonPlan | CarbonPlan | NOC UK (Atlantis) |
-| Shape | Library (12 npm packages) | React component library | Library (custom map layer) | Library (3 Cesium provider classes) |
+| Shape | Library (custom deck.gl layer) | React component library | Library (custom map layer) | Library (3 Cesium provider classes) |
 | Map host | deck.gl | Mapbox GL v1 (bundled) or MapLibre/Mapbox via `/core` | MapLibre GL / Mapbox GL v3 | CesiumJS (3D globe) |
 | Render API | WebGL2 via luma.gl shader modules | regl, hand-written GLSL | WebGL2, hand-written GLSL | WebGL2, custom GLSL inside Cesium primitives |
-| Geographic context | Full deck.gl basemap stack, projection mesh | Mapbox/MapLibre basemaps | MapLibre/Mapbox basemaps, optional adaptive-mesh reprojection | Cesium globe with imagery layers underneath |
-| Native projection support | Web Mercator + reprojection mesh | Web Mercator only (validated, throws otherwise) | EPSG:3857/4326 tiled, arbitrary CRS via proj4 in untiled mode | EPSG:4326 and EPSG:3857 only, autodetected |
+| Geographic context | Pairs with an external basemap (MapLibre/Mapbox, Google Maps, ...); not used in isolation | Mapbox/MapLibre basemaps | MapLibre/Mapbox basemaps, optional adaptive-mesh reprojection | Cesium globe with imagery layers underneath |
+| Native projection support | Web Mercator, plus arbitrary CRS support | Web Mercator only (validated, throws otherwise) | EPSG:3857/4326 tiled, arbitrary CRS via proj4 in untiled mode | EPSG:4326 and EPSG:3857 only, autodetected |
 | Zarr versions | v3 | v2 (primary) and v3 via `version` prop, read with `zarr-js` | v2 and v3, autodetected, via zarrita | v2 and v3, autodetected, via zarrita |
-| Conventions | GeoZarr (multiscales, proj, CRS) | Strict `ndpyramid` Web Mercator pyramids, `multiscales` in `.zattrs` | Tiled XYZ, experimental GeoZarr `multiscales` (untiled), user-supplied `spatialDimensions` + proj4 string | `ndpyramid` multiscales, CF time decoding, CF dim-name aliasing |
+| Conventions | GeoZarr (spatial, multiscales, proj) | Strict `ndpyramid` Web Mercator pyramids, `multiscales` in `.zattrs` | Tiled XYZ, experimental GeoZarr `multiscales` support, user-supplied `spatialDimensions` + proj4 string | `ndpyramid` multiscales, CF time decoding, CF dim-name aliasing |
 | Dimensionality | N-D, user passes `selection` per non-spatial dim | N-D via selector arrays (e.g. `{ month: [1,2,3] }` → uniforms `month_1`, `month_2`, `month_3`) | N-D via `selector` (multi-band selectors load multiple textures) | 2D imagery, 3D volumetric via draped slices, animated U/V vector fields |
 | Custom shader injection | Composable luma.gl shader modules + custom modules | `frag` prop on `<Raster>` | User-injectable fragment-shader strings, multi-band selectors expose named GLSL variables | Single fixed shader; geometry varies by provider |
 | License | MIT | MIT | MIT | MIT |
-| Maturity | v0.6.x, Zarr support added early 2026 | v3.6.0, last release Oct 2025, actively maintained | v0.5.0, "active experiment" | v0.1.4, latest commit Dec 2024 |
+| Maturity | Released regularly; Zarr support added early 2026 | Mature; powers CarbonPlan's published visualizations | Pre-1.0, "active experiment" | Pre-1.0, early development |
 
 ## Applications
 
@@ -37,7 +37,7 @@ The four libraries below are ordered roughly by host: deck.gl, MapLibre/Mapbox (
 | Conventions | CF `_ARRAY_DIMENSIONS`, no GeoZarr | CF (`grid_mapping`, `_FillValue`, lat/lon coords) |
 | Dimensionality | N-D, with 3D volume raycasting as a first-class mode | 2D fields with time slider; 8 grid topologies (regular, rotated, HEALPix, ICON triangular, Gaussian-reduced, curvilinear, irregular Delaunay) |
 | License | Apache 2.0 | MIT |
-| Maturity | v0.5.1, pre-1.0 | v1.0.0 (April 2026) |
+| Maturity | Pre-1.0 | 1.0 released April 2026 |
 
 ## Project framing
 
@@ -45,7 +45,7 @@ The four libraries below are ordered roughly by host: deck.gl, MapLibre/Mapbox (
 
 **`@carbonplan/maps`** is the original "dynamic client" library. A React component library built on `regl` and Mapbox GL v1, it is the rendering backbone of CarbonPlan's published visualizations (CMIP6 downscaling, seaweed farming, forest carbon). It assumes data is in a Web Mercator `ndpyramid` and validates that strictly; the trade-off for that constraint is a small, opinionated `<Map>` + `<Raster>` API and a polished `frag` prop for custom-shader injection.
 
-**zarr-layer** is the newer CarbonPlan project, designed to relax `@carbonplan/maps`'s assumptions. It implements MapLibre/Mapbox's `CustomLayerInterface` directly (not React-shaped), supports both tiled and untiled modes, handles arbitrary CRS via proj4 with adaptive Delaunay reprojection, and works with both v2 and v3 via zarrita. The trade-off is that it is less mature (v0.5.0, "active experiment") than the production-tested `@carbonplan/maps`. (Also supersedes the earlier `zarr-gl`.)
+**zarr-layer** is the newer CarbonPlan project, designed to relax `@carbonplan/maps`'s assumptions. It implements MapLibre/Mapbox's `CustomLayerInterface` directly (not React-shaped), supports both tiled and untiled modes, handles arbitrary CRS via proj4 with adaptive Delaunay reprojection, and works with both v2 and v3 via zarrita. The trade-off is that it is less mature (an "active experiment") than the production-tested `@carbonplan/maps`. (Also supersedes the earlier `zarr-gl`.)
 
 **zarr-cesium** is the same library shape (plug into an existing map host) but the host is Cesium. It exposes three Cesium provider classes for three different visualization shapes: a `ZarrLayerProvider` for 2D imagery on the globe, a `ZarrCubeProvider` for 3D volumetric data rendered as draped slices, and a `ZarrCubeVelocityProvider` that hands U/V components to `cesium-wind-layer` for animated particle visualization. Built by NOC for oceanographic and atmospheric use cases.
 
@@ -70,17 +70,19 @@ The host environment is the cleanest dividing line.
 
 **deck.gl-raster**, **`@carbonplan/maps`**, and **zarr-layer** are 2D-map-first. They sit inside an existing web-map ecosystem (deck.gl and Mapbox/MapLibre respectively), inherit basemap, attribution, picking, and projection handling, and primarily produce slippy-tile views. `@carbonplan/maps` enforces Web Mercator strictly; deck.gl-raster and zarr-layer have escape hatches for non-Mercator data, but the default mental model is "raster on a web map."
 
+deck.gl is not itself a basemap provider, and most deck.gl users [pair it with a basemap](https://deck.gl/docs/get-started/using-with-map) — most commonly MapLibre/Mapbox, but also Google Maps, OpenLayers, or ArcGIS. When interleaved with MapLibre/Mapbox, deck.gl renders through the *same* `CustomLayerInterface` that zarr-layer implements directly, so the Zarr layer draws inside the MapLibre layer stack (the [ECMWF example](https://developmentseed.org/deck.gl-raster/examples/dynamical-zarr-ecmwf/) renders the Zarr data underneath the basemap's text labels this way). The difference from zarr-layer is that deck.gl is an abstraction that is *not* tied to MapLibre/Mapbox: you can use it with them, but you are not forced to.
+
 **zarr-cesium** is globe-first. The host is CesiumJS, with its imagery layers underneath the data, so the integration story matches the 2D-map libraries (plug into the host's standard extension points), but the canvas is a 3D globe rather than a 2D web map.
 
 **Browzarr** and **GridLook** are scene-first with no basemap. Browzarr renders into a free three.js scene where the geographic case is just one of several render modes; volumetric raycasting has no map analogue. GridLook draws the Earth as a 3D sphere with coastlines and graticules, plus eight 2D projections, but at no point is there a tile basemap underneath.
 
 ## Zarr depth and conventions
 
-**deck.gl-raster** has the most opinionated metadata stance: a separate `@developmentseed/geozarr` package parses the GeoZarr conventions (multiscales, proj, CRS as EPSG/WKT2/PROJJSON) and produces a generic `TilesetDescriptor`, which `@developmentseed/deck.gl-zarr`'s `ZarrLayer` feeds into the same renderer that COG uses. Zarr v2, OME-NGFF, and CF are listed as future work.
+**deck.gl-raster** has the most opinionated metadata stance: a separate `@developmentseed/geozarr` package parses the GeoZarr conventions (spatial, multiscales, proj). For datasets without GeoZarr metadata, you can pass in GeoZarr metadata by hand. It produces a generic `TilesetDescriptor`, which `@developmentseed/deck.gl-zarr`'s `ZarrLayer` feeds into the same renderer that COG uses. Zarr v2, OME-NGFF, and CF are listed as future work.
 
 **`@carbonplan/maps`** is strict in a different way: it requires the data already be an `ndpyramid` Web Mercator pyramid with `multiscales` metadata in `.zattrs`. There is no in-browser CRS reprojection and no untiled mode; the assumption is all preprocessing happens upstream.
 
-**zarr-layer** is convention-light by comparison: tiled XYZ where the user supplies the spatial-dim mapping, plus experimental support for GeoZarr `multiscales` in untiled mode. It does not parse the rest of GeoZarr (CRS, geo-projection metadata) — projection is user-supplied as a proj4 string.
+**zarr-layer** is convention-light by comparison: tiled XYZ where the user supplies the spatial-dim mapping, plus experimental support for the GeoZarr `multiscales` convention. It does not parse the rest of GeoZarr (CRS, geo-projection metadata) — projection is user-supplied as a proj4 string.
 
 **zarr-cesium** uses `ndpyramid` for multiscale, decodes CF time, and aliases common CF dimension names. No GeoZarr; only EPSG:4326 and EPSG:3857 are supported, so curvilinear or rotated grids must be reprojected upstream.
 
@@ -90,13 +92,13 @@ The host environment is the cleanest dividing line.
 
 ## Picking the right tool
 
-- For tiled raster on a web map with the deck.gl ecosystem: **deck.gl-raster** with its new Zarr layer.
-- For Zarr on MapLibre/Mapbox: **zarr-layer**.
+- For web mapping in deck.gl (optionally [integrating with](https://deck.gl/docs/get-started/using-with-map) basemaps such as MapLibre/Mapbox, Google Maps, OpenLayers, ArcGIS): **deck.gl-raster** with its new Zarr layer.
+- For Zarr on MapLibre/Mapbox without a deck.gl dependency: **zarr-layer**.
 - For environmental, oceanographic, or atmospheric data on a Cesium 3D globe, especially with 3D slices or animated vector fields: **zarr-cesium**.
 - For exploratory science visualization, especially anything volumetric or where you want a hosted viewer for a Zarr URL: **Browzarr**.
 - For climate-model output on its native grid (HEALPix, ICON, rotated lat-lon, Gaussian-reduced) with multiple cartographic projections: **GridLook**.
 
-`@carbonplan/maps` is intentionally omitted from the recommendation list. It remains actively maintained and is the rendering backbone of CarbonPlan's published visualizations, but for new work the requirement that data be pre-baked into `ndpyramid` Web Mercator pyramids carries the same trade-offs as any pre-rendering pipeline: frozen projection, frozen pyramid structure, and a regen step on every data update. zarr-layer is the more flexible CarbonPlan path for new MapLibre/Mapbox integrations.
+`@carbonplan/maps` is intentionally omitted from the recommendation list. It is the rendering backbone of CarbonPlan's published visualizations, but for new work the requirement that data be pre-baked into `ndpyramid` Web Mercator pyramids carries the same trade-offs as any pre-rendering pipeline: frozen projection, frozen pyramid structure, and a regen step on every data update. zarr-layer is the more flexible CarbonPlan path for new MapLibre/Mapbox integrations.
 
 Roughly: deck.gl-raster, zarr-layer, and zarr-cesium are libraries you embed in a host map or globe; Browzarr and GridLook are scenes/apps you point at data. Within the libraries, the host (deck.gl, MapLibre/Mapbox, Cesium) is the choice. Within the apps, the choice is exploratory 3D versus ESM-grid-aware 2D/3D.
 

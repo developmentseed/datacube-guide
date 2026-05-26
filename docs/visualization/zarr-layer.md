@@ -32,5 +32,5 @@ Choose zarr-layer when the host map is MapLibre or Mapbox and you want a small, 
 ## Links
 
 - Source: [carbonplan/zarr-layer](https://github.com/carbonplan/zarr-layer)
-- Sibling project: [@carbonplan/maps](carbonplan-maps.md), CarbonPlan's earlier regl-based React component library; still actively maintained, with a stricter `ndpyramid` Web Mercator assumption and a React-component API surface
+- Sibling project: [@carbonplan/maps](carbonplan-maps.md), CarbonPlan's earlier regl-based React component library, with a stricter `ndpyramid` Web Mercator assumption and a React-component API surface
 - Related: [zarrita](https://github.com/manzt/zarrita.js), proj4js, `@developmentseed/raster-reproject`, delaunator

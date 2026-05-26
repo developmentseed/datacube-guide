@@ -1,6 +1,6 @@
 # carbonplan/maps
 
-A React component library for rendering Zarr-backed raster data on Mapbox or MapLibre maps, built around `regl`. Maintained by CarbonPlan under the MIT license. The original "dynamic client" library that informed CarbonPlan's later [zarr-layer](zarr-layer.md), and still actively maintained.
+A React component library for rendering Zarr-backed raster data on Mapbox or MapLibre maps, built around `regl`. Maintained by CarbonPlan under the MIT license. The original "dynamic client" library that informed CarbonPlan's later [zarr-layer](zarr-layer.md).
 
 ## At a glance
 
