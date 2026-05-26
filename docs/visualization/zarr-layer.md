@@ -9,7 +9,7 @@ A custom map layer that renders Zarr directly inside MapLibre GL or Mapbox GL JS
 - **Map host** — MapLibre GL or Mapbox GL JS v3+, via the native `CustomLayerInterface`
 - **Render API** — WebGL2, hand-written GLSL
 - **Zarr versions** — v2 and v3, autodetected
-- **Conventions** — Tiled XYZ; experimental support for the in-flight `multiscales` zarr-conventions standard for untiled data
+- **Conventions** — Tiled XYZ; experimental support for GeoZarr `multiscales` in untiled mode (other GeoZarr metadata — CRS, geo-projection — is not parsed)
 
 ## What it does
 
@@ -23,11 +23,11 @@ Two rendering modes coexist. **Tiled mode** assumes the data is already in Web M
 
 ## Zarr handling
 
-Reads use zarrita and detect v3 first, falling back to v2. Codecs supported through zarrita include bytes, zlib, gzip, blosc, lz4, zstd, transpose, crc32c, and bitround, with custom codecs registrable. Spatial dimensions are configured via the `spatialDimensions` option; non-spatial dimensions are sliced via a `selector` API that defaults to index 0 for unspecified dims and accepts either positional indices or coordinate-value lookups. CF conventions like `scale_factor`, `add_offset`, and `_FillValue` are honoured during normalization. GeoZarr is not explicitly modelled.
+Reads use zarrita and detect v3 first, falling back to v2. Codecs supported through zarrita include bytes, zlib, gzip, blosc, lz4, zstd, transpose, crc32c, and bitround, with custom codecs registrable. Spatial dimensions are configured via the `spatialDimensions` option; non-spatial dimensions are sliced via a `selector` API that defaults to index 0 for unspecified dims and accepts either positional indices or coordinate-value lookups. CF conventions like `scale_factor`, `add_offset`, and `_FillValue` are honoured during normalization. Only the `multiscales` portion of GeoZarr is implemented (experimental, untiled mode); CRS and geo-projection metadata are not parsed and must be supplied by the caller.
 
 ## Where it fits
 
-Choose zarr-layer when the host map is MapLibre or Mapbox and you want a small, native custom layer rather than the deck.gl ecosystem. It is the most direct path from "I have a Zarr in S3" to "it shows up on my MapLibre map." The trade-off versus deck.gl-raster is less metadata machinery (no GeoZarr parser) and no shared rendering stack with COG; the trade-off versus the viewer apps below is that zarr-layer is a layer, not a UI, so time sliders, colorbar widgets, and dataset pickers are the integrator's job.
+Choose zarr-layer when the host map is MapLibre or Mapbox and you want a small, native custom layer rather than the deck.gl ecosystem. It is the most direct path from "I have a Zarr in S3" to "it shows up on my MapLibre map." The trade-off versus deck.gl-raster is less metadata machinery (only the `multiscales` portion of GeoZarr is parsed; CRS and geo-projection metadata are caller-supplied) and no shared rendering stack with COG; the trade-off versus the viewer apps below is that zarr-layer is a layer, not a UI, so time sliders, colorbar widgets, and dataset pickers are the integrator's job.
 
 ## Links
 

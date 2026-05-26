@@ -17,7 +17,7 @@ The four libraries below are ordered roughly by host: deck.gl, MapLibre/Mapbox (
 | Geographic context | Full deck.gl basemap stack, projection mesh | Mapbox/MapLibre basemaps | MapLibre/Mapbox basemaps, optional adaptive-mesh reprojection | Cesium globe with imagery layers underneath |
 | Native projection support | Web Mercator + reprojection mesh | Web Mercator only (validated, throws otherwise) | EPSG:3857/4326 tiled, arbitrary CRS via proj4 in untiled mode | EPSG:4326 and EPSG:3857 only, autodetected |
 | Zarr versions | v3 | v2 (primary) and v3 via `version` prop, read with `zarr-js` | v2 and v3, autodetected, via zarrita | v2 and v3, autodetected, via zarrita |
-| Conventions | GeoZarr (multiscales, geo-proj, CRS) | Strict `ndpyramid` Web Mercator pyramids, `multiscales` in `.zattrs` | Tiled XYZ, experimental `multiscales`, user-supplied `spatialDimensions` | `ndpyramid` multiscales, CF time decoding, CF dim-name aliasing |
+| Conventions | GeoZarr (multiscales, proj, CRS) | Strict `ndpyramid` Web Mercator pyramids, `multiscales` in `.zattrs` | Tiled XYZ, experimental GeoZarr `multiscales` (untiled), user-supplied `spatialDimensions` + proj4 string | `ndpyramid` multiscales, CF time decoding, CF dim-name aliasing |
 | Dimensionality | N-D, user passes `selection` per non-spatial dim | N-D via selector arrays (e.g. `{ month: [1,2,3] }` → uniforms `month_1`, `month_2`, `month_3`) | N-D via `selector` (multi-band selectors load multiple textures) | 2D imagery, 3D volumetric via draped slices, animated U/V vector fields |
 | Custom shader injection | Composable luma.gl shader modules + custom modules | `frag` prop on `<Raster>` | User-injectable fragment-shader strings, multi-band selectors expose named GLSL variables | Single fixed shader; geometry varies by provider |
 | License | MIT | MIT | MIT | MIT |
@@ -76,11 +76,11 @@ The host environment is the cleanest dividing line.
 
 ## Zarr depth and conventions
 
-**deck.gl-raster** has the most opinionated metadata stance: a separate `@developmentseed/geozarr` package parses the GeoZarr conventions (multiscales, geo-proj, CRS as EPSG/WKT2/PROJJSON) and produces a generic `TilesetDescriptor`, which `@developmentseed/deck.gl-zarr`'s `ZarrLayer` feeds into the same renderer that COG uses. Zarr v2, OME-NGFF, and CF are listed as future work.
+**deck.gl-raster** has the most opinionated metadata stance: a separate `@developmentseed/geozarr` package parses the GeoZarr conventions (multiscales, proj, CRS as EPSG/WKT2/PROJJSON) and produces a generic `TilesetDescriptor`, which `@developmentseed/deck.gl-zarr`'s `ZarrLayer` feeds into the same renderer that COG uses. Zarr v2, OME-NGFF, and CF are listed as future work.
 
 **`@carbonplan/maps`** is strict in a different way: it requires the data already be an `ndpyramid` Web Mercator pyramid with `multiscales` metadata in `.zattrs`. There is no in-browser CRS reprojection and no untiled mode; the assumption is all preprocessing happens upstream.
 
-**zarr-layer** is convention-light by comparison: tiled XYZ where the user supplies the spatial-dim mapping, plus an experimental implementation of the in-flight `multiscales` zarr-conventions standard for untiled data. No GeoZarr.
+**zarr-layer** is convention-light by comparison: tiled XYZ where the user supplies the spatial-dim mapping, plus experimental support for GeoZarr `multiscales` in untiled mode. It does not parse the rest of GeoZarr (CRS, geo-projection metadata) — projection is user-supplied as a proj4 string.
 
 **zarr-cesium** uses `ndpyramid` for multiscale, decodes CF time, and aliases common CF dimension names. No GeoZarr; only EPSG:4326 and EPSG:3857 are supported, so curvilinear or rotated grids must be reprojected upstream.
 

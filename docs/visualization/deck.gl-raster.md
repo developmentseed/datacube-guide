@@ -9,7 +9,7 @@ GPU-accelerated raster visualization for deck.gl, with backends for both Cloud-O
 - **Map host** — deck.gl (typically with MapLibre GL, Mapbox GL, or Google Maps as the basemap)
 - **Render API** — WebGL2 via luma.gl shader modules
 - **Zarr versions** — v3 (in the current `@developmentseed/deck.gl-zarr` package)
-- **Conventions** — GeoZarr (multiscales, geo-proj, CRS as EPSG, WKT2, or PROJJSON)
+- **Conventions** — GeoZarr (multiscales, proj, CRS as EPSG, WKT2, or PROJJSON)
 
 ## What it does
 

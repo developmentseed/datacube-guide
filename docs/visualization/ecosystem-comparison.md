@@ -1,338 +1,73 @@
 # Dynamic tiling ecosystem comparison
 
-This page compares the two main FastAPI-based ecosystems for serving Zarr-backed datacubes as tiles: **TiTiler** (Development Seed) and **Xpublish** with its plugins (UCAR, Earth Mover, and the wider xarray community). For per-tool detail see the [Titiler ecosystem overview](titiler/overview.md) and the [Xpublish ecosystem overview](xpublish/overview.md). For the client-side equivalent (visualization libraries that bypass a tile server entirely), see the [client-side rendering comparison](client-side-comparison.md).
+This page compares the two main FastAPI-based ecosystems for serving Zarr-backed datacubes as tiles: **TiTiler** (Development Seed) and **Xpublish** with its plugins (UCAR, Earth Mover, and the wider xarray community). For per-ecosystem detail see the [Titiler ecosystem overview](titiler/overview.md) and the [Xpublish ecosystem overview](xpublish/overview.md). For the client-side equivalent (visualization libraries that bypass a tile server entirely), see the [client-side rendering comparison](client-side-comparison.md).
 
-## Overview
+## Summary
 
-Both ecosystems provide FastAPI-based web services for publishing geospatial and scientific datasets, but with different architectural philosophies and target use cases:
+| | TiTiler | Xpublish |
+|---|---|---|
+| Maintainer | Development Seed (Vincent Sarago, Aimee Barciauskas) | xarray community (Joe Hamman, Alex Kerney) + UCAR governance; `xpublish-tiles` by Earth Mover |
+| Shape | Layered Python stack: `rio-tiler` → `titiler.core` → `titiler.xarray` → applications (`titiler.application`, `titiler-cmr`, `titiler-multidim`, `titiler-eopf`) | Small `xpublish` core with independent plugins (`xpublish-tiles`, `xpublish-wms`, `xpublish-edr`, `opendap-protocol`) |
+| Rendering engine | `rio-tiler` + GDAL/rasterio | Datashader (Numba-JIT) for raster, trimesh for unstructured |
+| Primary inputs | COG, STAC; Zarr/NetCDF/Icechunk via `titiler.xarray` | Xarray-native: Zarr (primary), NetCDF, Icechunk |
+| Grid topologies | Regular and projected lat/lon are first-class; curvilinear limited; unstructured out of scope | Regular, curvilinear, FVCOM triangular, SELFE, 2D non-dimensional, HEALPix, cubed-sphere, polar |
+| Reprojection | GDAL warp (full kernel set) | Custom pyproj: separable 4326→3857 fast path, blocked thread-pool transform for general CRS |
+| Tile endpoints | XYZ, WMTS, TileJSON, POST `/statistics`; no vector tiles | XYZ, WMTS, OGC Tiles 1.0, full WMS, MVT/GeoJSON vector tiles, OGC EDR, OPeNDAP |
+| Conventions | CF via rioxarray (basic), STAC native | CF via `cf-xarray` (full), `flag_values`/`flag_meanings`/`flag_colors` for categorical, no STAC |
+| Caching | Redis (dataset-level) | Plugin-configurable; `xpublish-tiles` keys on `_xpublish_id` + dim + variable |
+| First request | Fast | Slow (Numba JIT; warm-up required) |
+| Deployment | Official Docker images, AWS Lambda/ECS CDK examples | No official images; deployment is hands-on |
+| License | MIT | Apache 2.0 |
 
-- **TiTiler**: specialized for dynamic tile generation with a layered architecture built on rio-tiler. Strongest on COG, STAC, and broad raster-format coverage; widely deployed in NASA-style tile-serving stacks.
-- **Xpublish**: a plugin-based data publishing platform around xarray, with separate plugins for tiles ([xpublish-tiles](xpublish/xpublish-tiles.md)), WMS ([xpublish-wms](https://github.com/xpublish-community/xpublish-wms)), EDR ([xpublish-edr](https://github.com/xpublish-community/xpublish-edr)), and OPeNDAP ([opendap-protocol](https://github.com/xpublish-community/opendap-protocol)). Strongest on unstructured and curvilinear grids (ROMS, FVCOM, SELFE, HEALPix, cubed-sphere) and on operational geoscience use cases.
+## Project framing
 
-## Detailed Comparison
+**TiTiler** is a layered library stack with `rio-tiler` at the foundation, a generic FastAPI factory in `titiler.core`, and a small set of opinionated applications: `titiler.application` (reference), `titiler-cmr` (NASA CMR), `titiler-multidim` (VEDA), `titiler-eopf` (ESA Copernicus). Xarray-backed Zarr/NetCDF support lives in `titiler.xarray` and has been exposed by the reference application under `/zarr/*` since 2.0. The history is COG-first — `rio-tiler` and `titiler.core` predate the Zarr work — and the resulting strengths are GDAL-native raster handling, STAC integration, and a deep set of cloud-deploy recipes.
 
-| Factor | TiTiler Ecosystem | Xpublish Ecosystem |
-|--------|------------------|-------------------|
-| **License** | MIT License (Development Seed) | Apache License 2.0 (UCAR) |
-| **Organizational Maintainer** | Development Seed | UCAR/Xarray community |
-| **Individual Maintainers** | Vincent Sarago, Aimee Barciauskas | Joe Hamman, Alex Kerney, distributed community |
+**Xpublish** is a small core (plugin extension points and an `xpublish` xarray accessor) with most user-facing capabilities in independent plugins. The design centre is xarray-native scientific data, with serious investment in irregular grid topologies (curvilinear ROMS, triangular FVCOM, SELFE, HEALPix, cubed-sphere). `xpublish-wms` predates `xpublish-tiles` and remains the more mature WMS path. Adoption is concentrated in operational geoscience — NOAA forecast systems (CBOFS/LOOFS/CREOFS) on the ROMS/FVCOM/SELFE side, climate models on the HEALPix/ICON side.
 
-### Maintenance, Governance, and Development Models
+## Inputs and grid topologies
 
-| Aspect | TiTiler | Xpublish |
-|--------|---------|----------|
-| **Governance Model** | Open source, built by Development Seed | Open source, community-driven (scientific community) |
-| **Development Focus** | Tile server optimization and performance | Protocol compliance and scientific data standards |
-| **Release Cadence** | Regular releases with coordinated ecosystem updates | Community-driven releases, plugin-independent versioning |
-| **Commercial Support** | Available through Development Seed | Community support through ESIP/scientific networks |
-| **Contributor Base** | Concentrated around geospatial tile serving | Distributed across oceanographic and climate science communities |
+**TiTiler**'s grid support reflects GDAL's bias toward regular rectangular rasters. Regular lat/lon and any PROJ-defined projected CRS are first-class; curvilinear data works with caveats; unstructured meshes (FVCOM triangles, SELFE) are out of scope. Conversely, COG and STAC are native: `rio-tiler` was built to serve COGs, and STAC items work as a first-class asset-discovery layer — `titiler-cmr` and `titiler-eopf` lean heavily on this.
 
-### Tested Input Formats
+**Xpublish-tiles** treats unstructured and irregular grids as first-class. The regular case uses datashader's raster pipeline; curvilinear goes through datashader's quadmesh with an optional approximate-rectilinear fast path detected via a Numba-optimized 1-pixel threshold check; triangular meshes use datashader's trimesh with Delaunay triangulation. Additional systems exist for HEALPix (cell-index coordinates with nested indexing), cubed-sphere (`FacetedGridSystem`), and polar grids (for radar data). COG and STAC are not in scope; the assumption is that data is xarray-readable (Zarr, NetCDF, or another xarray backend).
 
-| Format | TiTiler Support | Xpublish Support |
-|--------|----------------|------------------|
-| **Native Zarr** | ✅ Full support via titiler.xarray | ✅ Primary format with optimal performance |
-| **NetCDF** | ✅ Full support via h5netcdf engine | ✅ Full support via Xarray integration |
-| **Virtual Zarr** | ✅ Supported through zarr v3+ interfaces | ✅ Reference-based access to remote datasets |
-| **Cloud Optimized GeoTIFF (COG)** | ✅ Primary format for titiler.core | ❌ Not directly supported |
-| **STAC Items** | ✅ Native support for asset discovery | ❌ Not directly supported |
-| **HDF5/NetCDF via references** | ✅ Via virtual references | ✅ Via Zarr reference spec |
-| **Multi-file datasets** | ✅ Via CMR integration (NASA datasets) | ✅ Via catalog systems (Intake) |
-| **Icechunk stores** | ⚠️ Limited experimental support | ✅ Full support for versioned Zarr |
+## Rendering pipeline
 
-### IO Methods and Data Access
+**TiTiler** renders through `rio-tiler`'s GDAL stack: read a window, optionally warp, rescale, colormap, encode. The full GDAL resampling kernel set is exposed for both raster resampling and coordinate warping (nearest, bilinear, cubic, cubic spline, Lanczos, average, mode, max, min, med, q1, q3, sum, rms). Multi-band composites, band math via the `expression` parameter (e.g. `b1/b2` for NDVI), and algorithm extensions (hillshade, NDVI as a named algorithm) are supported. First-request latency is low; there is no JIT step.
 
-| Method | TiTiler | Xpublish |
-|--------|---------|----------|
-| **Core Libraries** | | |
-| • Xarray integration | ✅ Via titiler.xarray package | ✅ Native, primary data structure |
-| • Rasterio/GDAL | ✅ Via rio-tiler (titiler.core) | ❌ Not used |
-| • Zarr direct access | ✅ Via xarray.open_zarr | ✅ Native zarr.open_consolidated |
-| • fsspec support | ✅ For remote datasets (S3, HTTP, etc.) | ✅ For all remote access |
-| • h5netcdf engine | ✅ For NetCDF files | ✅ Via xarray backends |
-| **Data Loading** | | |
-| • Lazy loading | ✅ Via Dask arrays | ✅ Via Dask arrays |
-| • Async loading | ⚠️ Limited support | ✅ xarray.load_async() support |
-| • Caching | ✅ Redis-based dataset caching | ✅ Plugin-configurable |
-| • Chunk-aware | ✅ Leverages Zarr/NetCDF chunking | ✅ Optimized for chunked access |
-| **Coordinate Handling** | | |
-| • CRS transformations | ✅ Via rioxarray + pyproj | ✅ Via pyproj with thread pool |
-| • Coordinate renaming | ✅ Auto-detect lat/lon/x/y | ✅ CF-xarray for detection |
-| • Antimeridian handling | ✅ Longitude normalization | ✅ LongitudeCellIndex for wrapping |
-| **Indexing Methods** | | |
-| • Label-based selection | ✅ Xarray sel() with method parameter | ✅ Direct dimension indexing |
-| • Spatial indexing | ✅ Bounding box queries | ✅ Custom spatial indexes (CellTreeIndex) |
-| • Temporal indexing | ✅ Time dimension selection | ✅ CF time coordinate support |
+**Xpublish-tiles** renders through datashader (Numba-JIT) for raster and trimesh paths, with a custom pyproj-based reprojection that has a separable optimization for the 4326→3857 hot path and a configurable thread-pool blocked transform (`TRANSFORM_CHUNK_SIZE`) for the general case. Categorical rendering is a first-class concern: `flag_values`/`flag_meanings`/`flag_colors` in CF metadata map directly to discrete colormaps, and out-of-range colours can be set explicitly via `abovemaxcolor`/`belowmincolor`. First request is slow because Numba JIT-compiles on first invocation; production deployments must warm up the rendering paths. The trade-off versus TiTiler is worse performance on the first cold tile, much better performance on curvilinear and triangular data — datashader raster is reportedly 3–10x faster than quadmesh for the rectilinear case, and trimesh is the only practical option for FVCOM-class meshes.
 
-### Tested Grid Structures
+## Endpoint surface
 
-| Grid Type | TiTiler Support | Xpublish Support |
-|-----------|----------------|------------------|
-| **Regular lat/lon grids** | ✅ Optimized for rectangular grids | ✅ Full support via CF conventions |
-| **Projected coordinate systems** | ✅ Via morecantile TileMatrixSets | ✅ Via CF-compliant grid mappings |
-| **Curvilinear grids** | ⚠️ Basic support with limitations | ✅ Full support (ROMS: CBOFS, DBOFS, TBOFS, etc.) |
-| **FVCOM triangular grids** | ❌ No native support | ✅ Full support (LOOFS, LSOFS, LMHOFS, NGOFS2) |
-| **SELFE grids** | ❌ No native support | ✅ Full support (CREOFS) |
-| **Irregular/unstructured grids** | ❌ Limited support | ✅ Extensible grid system for custom types |
-| **2D non-dimensional grids** | ⚠️ Basic support | ✅ Full support (RTOFS, HRRR-Conus) |
-| **HEALPix** | ❌ No native support | ✅ Cell-index coordinates with nested indexing (xpublish-tiles, polygons style) |
-| **Cubed-sphere** | ❌ No native support | ✅ FacetedGridSystem in xpublish-tiles for cubed-sphere climate-model output |
-| **Polar grids** | ❌ No native support | ✅ Polar grid system in xpublish-tiles for radar/polar data |
+**TiTiler** exposes XYZ raster tiles (`/tiles/{z}/{x}/{y}`), WMTS, TileJSON, `/info` and `/info.geojson`, and a POST `/statistics` endpoint that accepts a GeoJSON geometry. Vector tiles are not native. STAC asset discovery is integrated via `titiler-cmr` and `titiler-eopf`. Configuration grain is per-application: each of the four applications has its own router set and dependency wiring.
 
-### Supported Endpoints
+**Xpublish** spreads endpoints across plugins. `xpublish-tiles` provides XYZ tiles, OGC Tiles 1.0, a dedicated `/tiles/legend` endpoint (rendered image or JSON colour stops), and three vector-tile styles (`vector/cells`, `vector/points`, `vector/contours`) producing MVT or GeoJSON. `xpublish-wms` provides full WMS 1.1.1/1.3.0 — more mature than the tiles plugin's WMS path. `xpublish-edr` provides OGC EDR position, area, and cube queries with multiple output formats (NetCDF, Parquet, CSV, GeoJSON, GeoTIFF). `opendap-protocol` implements DAP 2.0. The mix-and-match story is the point: pick the plugins your clients need.
 
-| Endpoint Category | TiTiler | Xpublish |
-|------------------|---------|----------|
-| **Tile Generation** | | |
-| • XYZ raster tiles | ✅ `/tiles/{z}/{x}/{y}` with multiple TMS | ✅ Via xpublish-tiles (TilesPlugin) and xpublish-wms |
-| • Vector tiles (MVT) | ❌ Not native | ✅ Via xpublish-tiles `vector/cells`, `vector/points`, `vector/contours` styles |
-| • Vector tiles (GeoJSON) | ❌ Not native | ✅ Via xpublish-tiles vector styles |
-| • WMTS | ✅ OGC WMTS compliance | ✅ Via xpublish-wms (GetMap, GetCapabilities) |
-| • TileJSON | ✅ Tile layer metadata | ✅ Via WMS plugin |
-| • Legend | ⚠️ Via colormap params on existing endpoints | ✅ Dedicated `/tiles/legend` endpoint in xpublish-tiles (rendered image or JSON colour stops) |
-| **Data Access** | | |
-| • Zarr API | ✅ Via xarray reader | ✅ Native `.zmetadata`, chunk access |
-| • OpenDAP | ❌ No direct support | ✅ Via xpublish-opendap plugin |
-| • OGC EDR | ❌ No direct support | ✅ Via xpublish-edr (position, area, cube queries) |
-| **Metadata** | | |
-| • Dataset info | ✅ `/info` and `/info.geojson` | ✅ Built-in dataset information endpoints |
-| • Variable listing | ✅ `/variables` (deprecated) | ✅ Automatic metadata exposure |
-| **Analysis** | | |
-| • Statistics/Histograms | ✅ `/statistics` (POST) with geometry support | ✅ Via EDR plugin with multiple output formats |
-| • Timeseries extraction | ✅ Temporal indexing and selection | ✅ Via EDR temporal querying |
-| • Spatial querying | ✅ Bbox and feature queries | ✅ EDR position, area, cube queries |
+## Metadata and conventions
 
-### Tile Request Parameters
+**TiTiler** handles CF through `rioxarray`: lat/lon/x/y auto-detection, basic grid-mapping support, `decode_times` as a parameter. The CF styling primitives (`flag_values`/`flag_meanings`/`flag_colors`) are not used directly. STAC item and asset metadata are native and are the integration story for `titiler-cmr` and `titiler-eopf`. CRS handling is rioxarray + pyproj; tile-matrix sets come from `morecantile`.
 
-| Parameter Category | TiTiler | Xpublish-Tiles |
-|-------------------|---------|----------------|
-| **Dataset Selection** | | |
-| • Variable/Asset | `variable` (xarray), `assets` (STAC) | `variables` (list, required) |
-| • Band indexes | `bidx` for multi-band selection | Single variable focus |
-| • Group/hierarchy | `group` for Zarr/HDF5 groups | Dataset-level only |
-| **Dimension Selection** | | |
-| • Dimension indexing | `sel={dim}={value}` (list of strings) | Any dimension as query param |
-| • Selection method | `sel_method` (nearest, pad, ffill, etc.) | DSL syntax: `dimension={method}::{value}` with `nearest`, `ffill`/`pad`, `bfill`/`backfill`, `exact` |
-| • Time selection | Via sel parameter | Direct time parameter with ISO8601 |
-| • Decode times | `decode_times` (boolean) | N/A (always decoded) |
-| **Styling & Rendering** | | |
-| • Colormap | `colormap_name` or `colormap` (JSON) | `style={type}/{colormap}` format |
-| • Color range | `rescale` (min,max) | `colorscalerange` (tuple) |
-| • Out-of-range colors | Clamping by default | `abovemaxcolor`, `belowmincolor` for explicit out-of-range colours |
-| • Custom colormap | JSON with int→hex mapping | JSON with 0-255→hex mapping |
-| • Categorical rendering | Limited | Native: `flag_values`, `flag_meanings`, `flag_colors` from CF metadata |
-| • Band math | `expression` (e.g., "b1/b2") | Not supported |
-| **Image Parameters** | | |
-| • Output format | `f` (jpeg, png, webp, tiff, etc.) | `f` (image/png, image/jpeg) |
-| • Tile size | `tile_scale` (1=256x256, 2=512x512) | `width`, `height` (multiples of 256) |
-| • Quality | Format-specific params | Not exposed |
-| **Reprojection** | | |
-| • Resampling | `resampling` (RIOResampling enum) | Automatic via datashader |
-| • Warp resampling | `reproject` (WarpResampling enum) | Coordinate transform in pipeline |
-| • Nodata | `nodata` value override | Automatic from metadata |
-| **Processing** | | |
-| • Histogram equalization | Via rescale algorithms | Not supported |
-| • Hillshade | Via extensions | Not supported |
-| • Statistics | POST to `/statistics` endpoint | Via EDR plugin |
-| **Error Handling** | | |
-| • Render errors | Standard HTTP errors | `render_errors` (boolean) for image tiles |
-| • Missing data | Configurable nodata handling | Transparent or nodata fill |
+**Xpublish-tiles** uses `cf-xarray` for full CF support: axis detection (X/Y/Z/T), multiple grid_mapping handling, CF time parsing, vertical-coordinate detection, and bounds-aware cell representation. Categorical rendering reads `flag_values`/`flag_meanings`/`flag_colors` directly. STAC is not used. CRS handling is pyproj-direct via CF `grid_mapping_name`; tile-matrix sets come from `morecantile` through the plugin.
 
-### Supported Tiling Features
+## Deployment and performance
 
-| Feature Category | TiTiler | Xpublish |
-|-----------------|---------|----------|
-| **Output Formats** | | |
-| • Raster formats | JPEG, PNG, WebP, TIFF, JP2, NumpyTile | PNG, JPEG via xpublish-tiles and xpublish-wms |
-| • Vector formats | ❌ | MVT (Mapbox Vector Tile) and GeoJSON via xpublish-tiles `vector/*` styles; GeoJSON, CSV via xpublish-edr |
-| • Scientific formats | Limited | NetCDF, Parquet, GeoTIFF via xpublish-edr |
-| **Rendering** | | |
-| • Rescaling | Linear, histogram-based, custom functions | Basic rescaling via WMS |
-| • Colormaps | Built-in + custom JSON colormaps | WMS styling capabilities |
-| • Band combinations | Multi-band composites and band math | Single variable visualization focus |
-| • Algorithms | NDVI, hillshade via extensions | Limited processing algorithms |
-| **Performance** | | |
-| • Caching | Redis-based response caching | Plugin-configurable caching |
-| • Concurrent access | Multi-threaded tile generation | FastAPI async processing |
-| • Chunk optimization | Leverages Zarr/NetCDF chunking | Optimized for chunked scientific data |
+**TiTiler** ships official Docker images and provides AWS CDK examples for Lambda and ECS. Deployment is stateless given an external cache; Redis is the documented dataset-cache option. Horizontal scaling is well-trodden. The critical tuning settings are Redis configuration and worker count. Image size carries GDAL overhead but is moderate.
 
-### Resampling Implementations
+**Xpublish-tiles** has no official Docker images and no Lambda/ECS recipes; deployment is hands-on. Dataset loading happens at startup (with `async_load` an option for large catalogs), JIT warm-up is required for the datashader pipelines (first request to each path is slow and unavoidable), and the critical tuning settings are `NUMBA_NUM_THREADS`, the coordinate-transform thread-pool size, and `TRANSFORM_CHUNK_SIZE`. Image size is larger (scientific Python stack) and CPU usage is higher (Numba JIT plus thread pools).
 
-| Resampling Aspect | TiTiler | Xpublish-Tiles |
-|-------------------|---------|----------------|
-| **Raster Resampling (RIOResampling)** | | |
-| • Available methods | nearest, bilinear, cubic, cubic_spline, lanczos, average, mode, gauss, max, min, med, q1, q3 | nearest (via datashader), automatic for continuous data |
-| • Default method | nearest | Adaptive based on data type |
-| • Usage context | Tile generation, preview, bbox queries | Internal rendering pipeline |
-| **Warp Resampling (coordinate reprojection)** | | |
-| • Available methods | nearest, bilinear, cubic, cubic_spline, lanczos, average, mode, max, min, med, q1, q3, sum, rms | Custom implementation via pyproj |
-| • Default method | nearest | Optimized for 4326→3857 (separable transform) |
-| • Thread pool | Not used | ✅ Configurable chunk-based parallel transform |
-| **Downsampling/Coarsening** | | |
-| • Method | Via GDAL overviews or on-the-fly | DataArray.coarsen().mean() with even factors |
-| • Automatic trigger | Based on zoom level | When data exceeds max_renderable_size |
-| • Boundary handling | GDAL standard | Configurable padding for edge effects |
-| **Grid-Specific Optimizations** | | |
-| • Rectilinear grids | Standard rasterio resampling | Datashader raster (3-10x faster than quadmesh) |
-| • Curvilinear grids | Limited support | Datashader quadmesh with optional rectilinear approximation |
-| • Triangular/UGRID | Not supported | Datashader trimesh with Delaunay triangulation |
-| • Categorical data | Mode resampling | Numbagg for nearest-neighbor on discrete data |
-| **Coordinate Transform Optimizations** | | |
-| • 4326→3857 | Via rioxarray/GDAL | Custom separable implementation (preserves grid structure) |
-| • General transforms | GDAL warp with selected kernel | Blocked transformation with thread pool |
-| • Chunking strategy | N/A | Configurable TRANSFORM_CHUNK_SIZE (NxN chunks) |
-| • Approximate rectilinear | Not implemented | Numba-optimized detection (1-pixel threshold) |
-| **Rendering Performance** | | |
-| • Rendering engine | rio-tiler (GDAL-based) | Datashader (Numba JIT-compiled) |
-| • JIT compilation | Not used | First-invocation blocking (unavoidable) |
-| • Numba threads | N/A | Configurable NUMBA_NUM_THREADS |
+## Picking the right tool
 
-### Metadata Conventions
+- **COG and STAC** are the design centre, or you need a mix of raster formats from one stack: **TiTiler**.
+- **Operational scientific data on irregular grids** (FVCOM, SELFE, ROMS curvilinear, HEALPix, ICON cubed-sphere): **Xpublish** with `xpublish-tiles` and/or `xpublish-wms`.
+- **OGC EDR queries** (position/area/cube extraction, time-series, profiles): **Xpublish** with `xpublish-edr`.
+- **OPeNDAP** clients: **Xpublish** with `opendap-protocol`.
+- **Categorical raster styling** from CF `flag_values`/`flag_meanings`/`flag_colors`, vector tiles, or a legend endpoint: **Xpublish-tiles**.
+- **NASA CMR**, **NASA VEDA**, or **ESA EOPF** data: **TiTiler** via `titiler-cmr`, `titiler-multidim`, or `titiler-eopf` respectively.
 
-| Convention Category | TiTiler | Xpublish-Tiles |
-|---------------------|---------|----------------|
-| **CF Conventions** | | |
-| • Standard names | ⚠️ Basic support via rioxarray | ✅ Full support via cf-xarray |
-| • Coordinate detection | lat/lon/x/y auto-detection | CF axis detection (X, Y, Z, T) |
-| • Grid mappings | Via rioxarray | Multiple grid_mapping support |
-| • Vertical coordinates | Limited | Z axis detection and handling |
-| • Time coordinates | decode_times parameter | CF-compliant time parsing |
-| • Bounds/cells | Not used | CF bounds for accurate cell representation |
-| **Zarr Metadata** | | |
-| • Format version | Zarr v2/v3 support | Zarr v2 primary, v3 compatible |
-| • Consolidated metadata | ✅ .zmetadata support | ✅ zarr.open_consolidated() |
-| • Chunk encoding | Standard zarr chunks | Standard + compressor/filters |
-| • Dimension names | _ARRAY_DIMENSIONS | _ARRAY_DIMENSIONS |
-| • Fill values | _FillValue handling | _FillValue + automatic detection |
-| **Custom Attributes** | | |
-| • valid_min/valid_max | ✅ Used for rescaling | ✅ Used for continuous data colorscale |
-| • valid_range | ✅ Converted to valid_min/max | Standard processing |
-| • flag_values | Not directly used | ✅ For categorical/discrete rendering |
-| • flag_meanings | Not directly used | ✅ Category labels |
-| • flag_colors | Not directly used | ✅ Custom categorical colormaps |
-| • long_name | Available in metadata | ✅ Used in tile metadata |
-| **OGC Standards** | | |
-| • OGC WMTS | ✅ Full compliance | Via WMS plugin |
-| • OGC Tiles API | ⚠️ Partial | ✅ Full compliance (1.0) |
-| • TileJSON | ✅ 3.0.0 support | ✅ 3.0.0 support |
-| • WMS | Limited | ✅ 1.1.1/1.3.0 compliance |
-| **STAC Metadata** | | |
-| • STAC Items | ✅ Native support | ❌ Not used |
-| • Asset metadata | ✅ Full integration | N/A |
-| • Temporal extent | Via STAC properties | Via CF time coordinates |
-| **Coordinate Reference Systems** | | |
-| • CRS detection | rioxarray CRS | CF grid_mapping + PyProj |
-| • EPSG codes | ✅ Standard support | ✅ Full PyProj CRS support |
-| • Custom projections | Via PROJ strings | Via CF grid_mapping_name |
-| • Default CRS | Explicit or epsg:4326 | epsg:4326 fallback |
-| **Dataset-Level Metadata** | | |
-| • Title/description | Via STAC or dataset attrs | Dataset.attrs with fallbacks |
-| • Keywords | Via STAC | attrs["keywords"] |
-| • License | Via STAC | attrs["license"] |
-| • Attribution | Via STAC | attrs["attribution"] |
-| • Contact | Via STAC | attrs["contact"] |
-| • Version | Not standard | attrs["version"] |
-| **Internal Identifiers** | | |
-| • Dataset ID | URL-based | attrs["_xpublish_id"] (required for caching) |
-| • Cache keys | URL + parameters | Dataset ID + dimension + variable |
+The two stacks compose. A common hybrid is TiTiler for public-facing slippy-map tiles (where its Redis cache and Lambda/ECS deploy story shine) and Xpublish-tiles/EDR for research-oriented access to the same datasets on their native grids.
 
-### Plugin/Extension Points
+## Related
 
-| Extension Type | TiTiler | Xpublish |
-|---------------|---------|----------|
-| **Architecture** | Factory-based endpoint creation | Plugin-based router system |
-| **Custom I/O** | Pluggable readers (Xarray, Rasterio) | Dataset provider plugins |
-| **Protocol Support** | Limited to tile/analysis endpoints | Full protocol plugins (WMS, EDR, OpenDAP) |
-| **Authentication** | Extensions for custom auth | Pluggable auth systems |
-| **Data Processing** | Algorithm extensions and middleware | Data transformation plugins |
-| **Deployment** | Application factory pattern | Configurable server distributions |
-
-### Architecture and Core Dependencies
-
-| Component | TiTiler | Xpublish-Tiles |
-|-----------|---------|----------------|
-| **Web Framework** | | |
-| • Framework | FastAPI | FastAPI (via xpublish) |
-| • Async support | ✅ ASGI-based | ✅ ASGI-based |
-| • OpenAPI docs | ✅ Automatic | ✅ Automatic |
-| **Core Data Libraries** | | |
-| • Primary reader | rio-tiler (rasterio/GDAL) | Xarray with custom grid systems |
-| • Xarray support | Via titiler.xarray addon | Native and required |
-| • Rasterio | ✅ Core dependency | ❌ Not used |
-| • GDAL | ✅ Via rasterio | ❌ Not used |
-| **Rendering Engines** | | |
-| • Tile rendering | rio-tiler (GDAL-based) | Datashader (Numba JIT) |
-| • Image encoding | rio-tiler + Pillow | Pillow |
-| • Resampling | GDAL/rasterio | Datashader + pyproj |
-| **Geospatial Libraries** | | |
-| • CRS handling | rioxarray + pyproj | pyproj |
-| • Coordinate transforms | GDAL warp | Custom pyproj implementation |
-| • Tile matrix sets | morecantile | morecantile (via plugin) |
-| **Scientific Computing** | | |
-| • Xarray | Optional (titiler.xarray) | Required, core |
-| • Dask | Via xarray | Via xarray |
-| • NumPy | Via dependencies | Direct use |
-| • Numba | Not used | ✅ For JIT compilation |
-| • numbagg | Not used | ✅ For aggregations |
-| • cf-xarray | Not used | ✅ For CF conventions |
-| **Grid/Mesh Support** | | |
-| • Regular grids | ✅ Native via GDAL | ✅ Via RasterIndex |
-| • Curvilinear grids | ⚠️ Limited | ✅ Full support |
-| • Unstructured meshes | ❌ No support | ✅ Via scipy.spatial.Delaunay |
-| • UGRID | ❌ No support | ✅ Via CellTreeIndex |
-| **Caching** | | |
-| • Implementation | Redis for datasets | Plugin-configurable |
-| • Cache strategy | Dataset-level | Dataset + grid system |
-| • Cache invalidation | TTL-based | Internal via _xpublish_id |
-| **Configuration** | | |
-| • Environment vars | Via Pydantic settings | Via Pydantic settings |
-| • Config files | Application-specific | Config system with env vars |
-| • Runtime tuning | Limited | Thread pool, async load, chunk size |
-
-### Deployment Considerations
-
-| Aspect | TiTiler | Xpublish-Tiles |
-|--------|---------|----------------|
-| **Container Support** | | |
-| • Official images | ✅ Docker Hub + GitHub registry | No official images |
-| • Base requirements | Python + GDAL | Python + scientific stack |
-| • Image size | Moderate (GDAL overhead) | Larger (scientific libraries) |
-| **Cloud Deployment** | | |
-| • AWS Lambda | ✅ CDK examples provided | Possible but not documented |
-| • AWS ECS | ✅ CDK examples provided | Manual setup |
-| • Kubernetes | Community deployments | Manual setup |
-| **Scaling Considerations** | | |
-| • Stateless | ✅ With external cache | ✅ Dataset loading needed |
-| • Horizontal scaling | ✅ Well-suited | ✅ With shared cache |
-| • Resource requirements | Moderate CPU + memory | High CPU for JIT, configurable threads |
-| **Performance Tuning** | | |
-| • Critical settings | Redis config, worker count | NUMBA_NUM_THREADS, thread pool size, async_load |
-| • First request | Fast (no JIT) | Slow (JIT compilation) |
-| • Warm-up needed | Only for cache | ✅ Required for datashader JIT |
-| • Memory footprint | Dataset + tile buffer | Dataset + coordinate cache + grid cache |
-
-## Use Case Recommendations
-
-### Choose TiTiler When:
-- **Primary need**: High-performance tile serving and web map visualization
-- **Data types**: COGs, STAC catalogs, regular gridded scientific data
-- **Requirements**: Fast tile generation, web mapping standards compliance, cloud-native architecture
-- **Users**: Web mapping applications, tile-based visualizations, GIS workflows
-
-### Choose Xpublish When:
-- **Primary need**: Multi-protocol data access and scientific data sharing
-- **Data types**: Complex gridded scientific datasets (ocean models, climate data)
-- **Requirements**: Protocol compliance (OpenDAP, EDR), flexible data access patterns, research workflows
-- **Users**: Scientific communities, oceanographic/climate data centers, research institutions
-
-## Hybrid Approaches
-
-For comprehensive data serving solutions, consider:
-
-1. **Complementary deployment**: Use TiTiler for tile-based visualization and Xpublish for data access protocols
-2. **Protocol bridging**: Leverage both ecosystems' strengths for different access patterns
-3. **Staged architecture**: TiTiler for public-facing maps, Xpublish for research data access
-
----
-
-*Both ecosystems continue to evolve, with increasing interoperability and shared standards adoption across the scientific data serving landscape.*
+- [Client-side rendering comparison](client-side-comparison.md): browser-side libraries (deck.gl-raster, `@carbonplan/maps`, zarr-layer, zarr-cesium) and viewer apps (Browzarr, GridLook) that read Zarr directly with no tile server.
+- [Titiler ecosystem overview](titiler/overview.md), [Xpublish ecosystem overview](xpublish/overview.md): per-ecosystem detail.
+- [Xpublish-tiles detail page](xpublish/xpublish-tiles.md).
