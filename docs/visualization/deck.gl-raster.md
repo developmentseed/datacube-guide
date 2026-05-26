@@ -5,7 +5,7 @@ GPU-accelerated raster visualization for deck.gl, with backends for both Cloud-O
 ## At a glance
 
 - **Repo** — [developmentseed/deck.gl-raster](https://github.com/developmentseed/deck.gl-raster)
-- **Shape** — Library, distributed as 12 npm packages under the `@developmentseed` namespace
+- **Shape** — Library, monorepo packages under the `@developmentseed` namespace. End users rely on `@developmentseed/deck.gl-zarr` as the high-level entry point.
 - **Map host** — deck.gl (typically with MapLibre GL, Mapbox GL, or Google Maps as the basemap)
 - **Render API** — WebGL2 via luma.gl shader modules
 - **Zarr versions** — v3 (in the current `@developmentseed/deck.gl-zarr` package)
@@ -13,13 +13,13 @@ GPU-accelerated raster visualization for deck.gl, with backends for both Cloud-O
 
 ## What it does
 
-deck.gl-raster provides a generic raster pipeline that is independent of the tile source. The same `RasterTileLayer` and `RasterLayer` render either COG tiles (via `@developmentseed/cogeotiff`) or GeoZarr tiles (via `@developmentseed/deck.gl-zarr`), because the architecture introduces a common `TilesetDescriptor` interface that both backends satisfy. The result is that a project standardising on deck.gl can mix Zarr and COG layers in the same scene without bringing in a second rendering stack.
+deck.gl-raster provides a generic raster pipeline that is independent of the tile source. The same `RasterTileLayer` and `RasterLayer` render either COG tiles (via `@developmentseed/cogeotiff`) or Zarr chunks (via `@developmentseed/deck.gl-zarr`), because the architecture defines a common `TilesetDescriptor` interface that both backends satisfy. The result is that a project standardising on deck.gl can mix Zarr and COG layers in the same scene without bringing in a second rendering stack.
 
 ## How it renders
 
 The pipeline is composed from luma.gl shader modules. A user constructs a render pipeline as a list, for example `renderPipeline: [LinearRescale, Colormap, FilterNoDataVal]`, and the framework wires uniforms and texture bindings on the GPU. Built-in modules cover linear rescaling to [0, 1], colormap LUT sampling against a 256-entry RGBA texture, nodata masking, and band compositing of up to four input bands with per-band UV transforms. Users can write custom fragment shaders to express arbitrary band math; the published examples include NDVI from NIR and Red textures and an AlphaEarth Foundation embeddings mosaic.
 
-Reprojection from the source CRS to Web Mercator is performed once on the CPU as a triangle mesh (using `@developmentseed/raster-reproject`), then rasterized on the GPU. This keeps non-Mercator data renderable inside an otherwise Mercator deck.gl scene.
+Reprojection from the source CRS to Web Mercator is performed on the GPU using an adaptive triangle mesh. This keeps non-Mercator data renderable inside an otherwise Mercator deck.gl scene.
 
 ## Zarr handling
 
