@@ -1,6 +1,6 @@
 [project]
 name = "datacube-benchmark"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Utilities to benchmark datacubes with various formats, compressions, and chunking schemes."
 readme = "README.md"
 authors = [
@@ -31,8 +31,16 @@ dependencies = [
 datacube-benchmark = "datacube_benchmark:main"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+# The package lives in a workspace subdirectory; point setuptools-scm at the repo root.
+raw-options = { root = "../.." }
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/datacube_benchmark/_version.py"
 
 [tool.numpydoc_validation]
 # See https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks for list of checks
