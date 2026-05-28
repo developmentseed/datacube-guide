@@ -3,29 +3,42 @@ name = "datacube-benchmark"
 dynamic = ["version"]
 description = "Utilities to benchmark datacubes with various formats, compressions, and chunking schemes."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.txt"]
 authors = [
     { name = "Max Jones", email = "14077947+maxrjones@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
+keywords = ["zarr", "datacube", "benchmark", "xarray", "obstore", "geospatial"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: System :: Benchmark",
+]
 dependencies = [
-    "arro3-core>=0.5.1",
     "dask>=2025.5.1",
-    "geojson-pydantic>=2.0.0",
-    "earthaccess~=0.11.0",
-    "h5netcdf~=1.1.0",
-    "hdf5plugin>=5.1.0",
-    "httpx>=0.28.1",
-    "morecantile>=6.2.0",
     "numcodecs>=0.16.1",
+    "numpy>=2.0",
     "obstore>=0.6.0",
+    "pandas>=2.0",
     "pint>=0.24.4",
-    "psutil>=7.0.0",
     "pyarrow>=20.0.0",
-    "rich>=14.0.0",
-    "s3fs>=0.4.2",
     "xarray>=2025.6.1",
     "zarr>=3.0.8",
 ]
+
+[project.urls]
+Homepage = "https://developmentseed.org/datacube-guide/"
+Repository = "https://github.com/developmentseed/datacube-guide"
+Issues = "https://github.com/developmentseed/datacube-guide/issues"
 
 [project.scripts]
 datacube-benchmark = "datacube_benchmark:main"

@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+# Deny by default; each job grants only what it needs.
+permissions: {}
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout the repo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.0.2
+        with:
+          # Full history + tags so hatch-vcs can resolve the package version.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install a specific version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+
+      - name: Build sdist and wheel
+        run: uv build --package datacube-benchmark
+
+      - name: Check distributions
+        run: uvx twine check dist/*
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    # Only publish from a GitHub Release, never from pushes or PRs.
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    # Configure this environment as the trusted publisher on PyPI.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/datacube-benchmark
+    permissions:
+      id-token: write # OIDC token for PyPI trusted publishing
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
