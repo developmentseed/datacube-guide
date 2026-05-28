@@ -81,7 +81,7 @@ grid topology at all.
   **cubed-sphere**. Standardized by the
   [OGC DGGS abstract specification](https://www.ogc.org/standards/dggs/).
 
-![Five panels showing grid topologies: regular (Cartesian grid), curvilinear (warped but logically rectangular), triangular (unstructured mesh), HEALPix (equal-area pixelization of the sphere), and cubed-sphere (six warped square faces).](../visualization/images/grid-topologies.svg){ width="100%" }
+![Four grid types: rectilinear (regular Cartesian cells), curvilinear (logically rectangular but spatially warped), discrete global grid system (hexagonal cells), and unstructured (irregular triangular mesh).](../visualization/images/grid-types.svg){ width="100%" }
 
 The two axes combine: a dataset can be **gridded + structured** (most satellite
 Level-3 products), **gridded + unstructured** (an ocean-model output on a
