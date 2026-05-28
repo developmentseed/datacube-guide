@@ -13,7 +13,7 @@ A FastAPI-based xpublish plugin that turns xarray datasets into raster and vecto
 
 ## What it does
 
-xpublish-tiles takes an xarray dataset (regular, curvilinear, triangular, or HEALPix) and serves OGC Tiles, OGC WMS, and (newer) vector tiles directly from it, without a pre-rendering step. Its design centre is the operational geoscience use case: ocean models on ROMS, FVCOM, and SELFE grids; HEALPix and cubed-sphere from climate models; HRRR and RTOFS on 2D non-dimensional grids. These are precisely the grid topologies that GDAL-based tile servers either don't handle or handle awkwardly.
+xpublish-tiles takes an xarray dataset (regular, curvilinear, triangular, or HEALPix) and serves OGC Tiles, OGC WMS, and (newer) vector tiles directly from it, without a pre-rendering step. Its design focus is the operational geoscience use case: ocean models on ROMS, FVCOM, and SELFE grids; HEALPix and cubed-sphere from climate models; HRRR and RTOFS on 2D non-dimensional grids. These are precisely the grid topologies that GDAL-based tile servers either don't handle or handle awkwardly.
 
 The plugin lives inside the xpublish ecosystem; see the [Xpublish ecosystem overview](overview.md) for the broader picture, and the [Dynamic tiling ecosystem comparison](../ecosystem-comparison.md) for how it stacks up against TiTiler.
 
@@ -27,8 +27,8 @@ Two plugins ship in the same repository and are loaded independently.
 The rendering pipeline is:
 
 1. **Coordinate transform.** A custom pyproj-based implementation, with a separable specialization for EPSG:4326→3857 that preserves the input grid structure (no per-pixel warp) and a thread-pool blocked transform for general cases. Tunable via `TRANSFORM_CHUNK_SIZE` and the thread-pool size.
-2. **Resampling and aggregation.** Datashader chooses an engine based on grid type: a fast rectilinear path (3–10× faster than the alternatives), `quadmesh` for curvilinear grids, and `trimesh` with Delaunay triangulation for unstructured / UGRID. `numbagg` handles nearest-neighbour aggregation for discrete data.
-3. **Styling.** Continuous data uses `colorscalerange` plus a colormap LUT; categorical data uses `flag_values` / `flag_meanings` / `flag_colors`; `abovemaxcolor` and `belowmincolor` parameters colour out-of-range values explicitly rather than clamping.
+2. **Resampling and aggregation.** Datashader chooses an engine based on grid type: a fast rectilinear path (3–10× faster than the alternatives), `quadmesh` for curvilinear grids, and `trimesh` with Delaunay triangulation for unstructured / UGRID. `numbagg` handles nearest-neighbor aggregation for discrete data.
+3. **Styling.** Continuous data uses `colorscalerange` plus a colormap LUT; categorical data uses `flag_values` / `flag_meanings` / `flag_colors`; `abovemaxcolor` and `belowmincolor` parameters color out-of-range values explicitly rather than clamping.
 4. **Encoding.** Pillow for raster output; protocol buffers for MVT vector tiles.
 
 Async loading uses `xarray.load_async()`, configurable via the `async_load` setting. Caching keys are built from a required `_xpublish_id` dataset attribute plus the requested dimension and variable.
@@ -58,7 +58,7 @@ Selected request parameters; see the in-repo OpenAPI docs for the full surface.
 | Dimension selection | `dimension={method}::{value}` | DSL with `nearest`, `ffill`/`pad`, `bfill`/`backfill`, `exact` |
 | Style | `style={type}/{colormap}` | Continuous, categorical, vector subtypes |
 | Color range | `colorscalerange` | Tuple `(min, max)` |
-| Out-of-range | `abovemaxcolor`, `belowmincolor` | Explicit colours for clipped values |
+| Out-of-range | `abovemaxcolor`, `belowmincolor` | Explicit colors for clipped values |
 | Custom colormap | JSON | `0–255` → hex mapping |
 | Image dimensions | `width`, `height` | Multiples of 256 |
 | Image format | `f` | `image/png`, `image/jpeg`, MVT, GeoJSON |
@@ -66,7 +66,7 @@ Selected request parameters; see the in-repo OpenAPI docs for the full surface.
 
 Notable endpoints beyond the standard OGC Tiles set:
 
-- **Legend endpoint** (`/tiles/legend`) — returns a rendered legend image or JSON colour-stop description for the requested style.
+- **Legend endpoint** (`/tiles/legend`) — returns a rendered legend image or JSON color-stop description for the requested style.
 - **Vector tiles** — `vector/cells`, `vector/points`, `vector/contours` styles emit MVT or GeoJSON with cell geometries, suitable for use as the data layer of a MapLibre/Mapbox vector style.
 
 ## Examples
@@ -106,12 +106,12 @@ The same endpoint shape covers raster output, vector output, and the legend; the
         &colorscalerange=270,310
     ```
 
-    Returns a rendered legend image matching the style above. Add `f=application/json` to get the colour stops as structured data instead, useful for rendering a custom legend in a frontend rather than using the prebaked image.
+    Returns a rendered legend image matching the style above. Add `f=application/json` to get the color stops as structured data instead, useful for rendering a custom legend in a frontend rather than using the prebaked image.
 
 A few request shapes worth knowing:
 
 - `dimension={method}::{value}` is the dimension-selection DSL (e.g. `time=nearest::2024-06-15T12:00:00Z`).
-- `abovemaxcolor` and `belowmincolor` colour out-of-range values explicitly rather than clamping them, useful for highlighting outliers.
+- `abovemaxcolor` and `belowmincolor` color out-of-range values explicitly rather than clamping them, useful for highlighting outliers.
 - For categorical data, use `style=raster/categorical` and let the dataset's `flag_values` / `flag_colors` drive the rendering.
 
 ## Where it fits

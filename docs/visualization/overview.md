@@ -7,7 +7,7 @@ Datacube visualizations can be sub-divided into two categories: static and dynam
 ## What does it take to dynamically visualize data?
 
 - Rendering engine: A library that displays the data, commonly consisting of a graphics context (e.g., WebGL, SVG, or DOM elements), drawing primitives (points, lines, shapes, textures, meshes), and coordinate systems (e.g., screen space, world space, data space transformations).
-- Framework: Rather than interacting with a rendering engine directly, developers often use frameworks that provide helpful abstractions. Frameworks typically handle layer management and composition, efficient data binding and updates, built-in interaction patterns, and performance optimizations like culling and batching. Geospatial examples include deck.gl and mapbox-gl-js.
+- Framework: Rather than interacting with a rendering engine directly, developers often use frameworks that provide helpful abstractions. Frameworks typically handle layer management and composition, efficient data binding and updates, built-in interaction patterns, and performance optimizations like culling and batching. Geospatial examples include deck.gl and MapLibre/Mapbox GL JS.
 - Data source(s): The data sources for the visualization may be hosted on the site or delivered by a backend server.
 - Backend services: The backend services take requests from the user interface and provide well-formatted responses. This process may involve I/O, format conversion, resampling, aggregation, and computational processing.
 - Data orchestration: The data orchestration layer of the user interface manages the flow of data from sources to the visualization framework, handling API integration (such as connecting to STAC catalogs to discover available datasets) and coordination with backend services (like tiling servers that process and serve datacube slices). For example, when a user selects a specific time range and geographic region, the data orchestration layer translates this selection into the appropriate API calls and ensures the resulting data reaches the framework in the correct format.
@@ -22,7 +22,7 @@ Dynamic datacube visualizations require more complex considerations than visuali
 - Multi-dimensional structure: The user interaction layer and data orchestration components need to provide the user a way to specify the dimensionality of the visualization (typically choosing to display 1, 2, or 3 dimensions at a time) relative to the dimensionality of the data source (which can commonly be 3-, 4-, or 5-D).
 - Complex visualization requests: The range of visualization experiences increases with the dimensionality of the dataset. For example, users will often request animations, time-series, or pseudo-3-D visualizations.
 - Large scale data sources: Datacubes can exceed many TBs and consist of data spanning thousands of files, which requires further performance optimizations, backend complexity, and sophisticated caching strategies (tile caches, query result caches, etc.).
-- Complexity in data sources: Datacubes may be stored in many different file formats (e.g., GeoTIFF, GRIB, COG, NetCDF, Zarr, etc.) which adds complexity to the backend services. The sources can also span cloud providers (e.g., GCS, AWS) and involve protocols like OPeNDAP.
+- Complexity in data sources: Datacubes may be stored in many different file formats (e.g., GeoTIFF/COG, GRIB, NetCDF, Zarr, etc.) which adds complexity to the backend services. The sources can also span cloud providers (e.g., GCS, AWS) and involve protocols like OPeNDAP.
 - Coordinate reference systems (CRS): Datacubes often involve complex coordinate reference system transformations between data coordinates, geographic projections, and display coordinates.
 - Temporal considerations: Animation frameworks, temporal interpolation, and playback controls are more complex for datacubes, especially when integrating multiple data sources with different temporal resolutions or misaligned time coordinates.
 
@@ -59,11 +59,3 @@ For users on a non-image-rendering reader:
 3. **Which rendering host?** [deck.gl](deck.gl-raster.md) for the deck.gl ecosystem, [CesiumJS](zarr-cesium.md) for a 3D globe, or [zarr-layer](zarr-layer.md) for MapLibre/Mapbox.
 
 [`@carbonplan/maps`](carbonplan-maps.md) is documented for catalog completeness and remains the rendering backbone of CarbonPlan's published visualizations, but for new work it isn't in the recommendation path: it requires data to be pre-baked into Web Mercator `ndpyramid` pyramids, which commits you to a regeneration pipeline and the same frozen-styling trade-offs that pre-rendering normally implies.
-
-The Graphviz sources for the figures on this page live in `docs/visualization/images/` (`decision-tree.dot`, `architecture-stack.dot`, `dimensionality-fan.dot`, `scale-funnel.dot`). The static-vs-dynamic comparison is hand-authored SVG. Regenerate the four Graphviz SVGs in one go:
-
-```sh
-for f in decision-tree architecture-stack dimensionality-fan scale-funnel; do
-  dot -Tsvg "docs/visualization/images/$f.dot" -o "docs/visualization/images/$f.svg"
-done
-```

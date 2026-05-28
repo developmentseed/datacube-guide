@@ -5,11 +5,11 @@
 ## Key features
 
 - **Multi-dimensional support** — native handling of 3D, 4D, and 5D datasets via `titiler.xarray`.
-- **Icechunk support** — full `opener_icechunk()` reads icechunk repositories locally or from S3 (added in v0.7.0). Includes an authorization config for virtual chunk access (`authorized_chunk_access`).
+- **Icechunk support** — full `opener_icechunk()` reads Icechunk repositories locally or from S3 (added in v0.7.0). Includes an authorization config for virtual chunk access (`authorized_chunk_access`).
 - **Zarr v3** — works against Zarr v3 stores via `zarr>=3.1`.
 - **Redis caching** — optional response caching via `TITILER_MULTIDIM_ENABLE_CACHE`. Uses `fakeredis` in tests.
 - **OpenTelemetry tracing** — X-Ray and OTel tracing enabled for Lambda and other tracing-aware deployments (added in v0.6.0).
-- **VEDA integration** — production deployments orchestrated via [NASA-IMPACT/veda-deploy](https://github.com/NASA-IMPACT/veda-deploy); PRs labelled `deploy-dev` trigger ephemeral environments.
+- **VEDA integration** — production deployments orchestrated via [NASA-IMPACT/veda-deploy](https://github.com/NASA-IMPACT/veda-deploy); PRs labeled `deploy-dev` trigger ephemeral environments.
 
 ## Backend dependency
 

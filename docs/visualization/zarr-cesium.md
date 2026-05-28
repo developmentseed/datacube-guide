@@ -23,7 +23,7 @@ Demo datasets focus on oceanography and atmospheric reanalysis (NEMO model outpu
 
 ## How it renders
 
-All three providers share the same colour pipeline. A fragment shader (`src/shaders.ts`) samples a single-channel data texture, applies `scale_factor` and `add_offset`, masks NaN and nodata, normalizes against per-layer min and max, and looks up a 1D colormap texture built from `jsColormaps` (matplotlib-compatible: viridis, plasma, inferno, jet, ...). All colour mapping happens GPU-side; there is no CPU canvas stage.
+All three providers share the same color pipeline. A fragment shader (`src/shaders.ts`) samples a single-channel data texture, applies `scale_factor` and `add_offset`, masks NaN and nodata, normalizes against per-layer min and max, and looks up a 1D colormap texture built from `jsColormaps` (matplotlib-compatible: viridis, plasma, inferno, jet, ...). All color mapping happens GPU-side; there is no CPU canvas stage.
 
 Where the providers diverge is in geometry:
 

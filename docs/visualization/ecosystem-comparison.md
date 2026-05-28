@@ -1,6 +1,6 @@
 # Dynamic tiling ecosystem comparison
 
-This page compares the two main [FastAPI](https://fastapi.tiangolo.com)-based ecosystems for serving Zarr-backed datacubes as tiles: **[TiTiler](https://github.com/developmentseed/titiler)** ([Development Seed](https://developmentseed.org)) and **[Xpublish](https://github.com/xpublish-community/xpublish)** with its plugins (the [xpublish-community](https://github.com/xpublish-community) org, [Earthmover](https://earthmover.io), and the wider [xarray](https://xarray.dev) community). For per-ecosystem detail see the [Titiler ecosystem overview](titiler/overview.md) and the [Xpublish ecosystem overview](xpublish/overview.md). For the client-side equivalent (visualization libraries that bypass a tile server entirely), see the [client-side rendering comparison](client-side-comparison.md).
+This page compares the two main [FastAPI](https://fastapi.tiangolo.com)-based ecosystems for serving Zarr-backed datacubes as tiles: **[TiTiler](https://github.com/developmentseed/titiler)** ([Development Seed](https://developmentseed.org)) and **[Xpublish](https://github.com/xpublish-community/xpublish)** with its plugins (the [xpublish-community](https://github.com/xpublish-community) org, [Earthmover](https://earthmover.io), and the wider [xarray](https://xarray.dev) community). For per-ecosystem detail see the [TiTiler ecosystem overview](titiler/overview.md) and the [Xpublish ecosystem overview](xpublish/overview.md). For the client-side equivalent (visualization libraries that bypass a tile server entirely), see the [client-side rendering comparison](client-side-comparison.md).
 
 !!! tip "Which should I use?"
 
@@ -31,7 +31,7 @@ This page compares the two main [FastAPI](https://fastapi.tiangolo.com)-based ec
 
 The deeper detail lives on the per-ecosystem pages (linked from the table headers and under [Related](#related)); this section covers only the contrasts that don't belong to either page on its own.
 
-**Structure.** TiTiler is a vertically layered stack — `rio-tiler` and `titiler.core` at the base, `titiler.xarray` adding Zarr/NetCDF, opinionated applications on top — with a COG-first lineage that shows up as GDAL-native raster handling, STAC integration, and a deep set of cloud-deploy recipes. Xpublish is a small core plus independent, mix-and-match plugins (tiles, WMS, EDR, OPeNDAP), centred on xarray-native scientific data and the irregular grid topologies operational geoscience uses.
+**Structure.** TiTiler is a vertically layered stack — `rio-tiler` and `titiler.core` at the base, `titiler.xarray` adding Zarr/NetCDF, opinionated applications on top — with a COG-first lineage that shows up as GDAL-native raster handling, STAC integration, and a deep set of cloud-deploy recipes. Xpublish is a small core plus independent, mix-and-match plugins (tiles, WMS, EDR, OPeNDAP), centered on xarray-native scientific data and the irregular grid topologies operational geoscience uses.
 
 ![Architecture of the TiTiler layered stack alongside the Xpublish core-plus-plugins stack](images/ecosystem-architecture.svg){ width="100%" }
 
@@ -43,8 +43,8 @@ The deeper detail lives on the per-ecosystem pages (linked from the table header
 
 ## Picking the right tool
 
-- **COG and STAC** are the design centre, or you need a mix of raster formats from one stack: **TiTiler**.
-- **Operational scientific data on irregular grids** (FVCOM, SELFE, ROMS curvilinear, HEALPix, ICON cubed-sphere): **Xpublish** with `xpublish-tiles` and/or `xpublish-wms`.
+- **COG and STAC** are the design center, or you need a mix of raster formats from one stack: **TiTiler**.
+- **Operational scientific data on irregular grids** (FVCOM, SELFE, ROMS curvilinear, HEALPix, ICON triangular): **Xpublish** with `xpublish-tiles` and/or `xpublish-wms`.
 - **OGC EDR queries** (position/area/cube extraction, time-series, profiles): **Xpublish** with `xpublish-edr`.
 - **OPeNDAP** clients: **Xpublish** with `opendap-protocol`.
 - **Categorical raster styling** from CF `flag_values`/`flag_meanings`/`flag_colors`, vector tiles, or a legend endpoint: **Xpublish-tiles**.
@@ -55,5 +55,5 @@ The two stacks compose. A common hybrid is TiTiler for public-facing slippy-map 
 ## Related
 
 - [Client-side rendering comparison](client-side-comparison.md): browser-side libraries (deck.gl-raster, `@carbonplan/maps`, zarr-layer, zarr-cesium) and viewer apps (Browzarr, GridLook) that read Zarr directly with no tile server.
-- [Titiler ecosystem overview](titiler/overview.md), [Xpublish ecosystem overview](xpublish/overview.md): per-ecosystem detail.
+- [TiTiler ecosystem overview](titiler/overview.md), [Xpublish ecosystem overview](xpublish/overview.md): per-ecosystem detail.
 - [Xpublish-tiles detail page](xpublish/xpublish-tiles.md).

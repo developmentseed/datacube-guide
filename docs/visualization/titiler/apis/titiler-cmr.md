@@ -11,7 +11,7 @@
 - **Per-DAAC EDL credentials** — Earthdata Login bearer-token credentials cached per DAAC (5-minute refresh), replacing the older AWS IAM role flow.
 - **Expression translation** — named-asset and named-variable expressions (e.g. `B04/B03`) are automatically rewritten to `b1/b2` form for `rio-tiler>=9` compatibility.
 - **GeoJSON granule output** — `/granules` endpoints accept `f=geojson` to return FeatureCollections of granule footprints.
-- **Multi-variable xarray** — `variables` parameter accepts repeated values for multi-band requests; superseded the singular `variable` parameter.
+- **Multi-variable xarray** — `variables` parameter accepts repeated values for multi-band requests; supersedes the singular `variable` parameter.
 
 ## Backend dependency
 

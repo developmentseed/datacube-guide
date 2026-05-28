@@ -1,6 +1,6 @@
 # About
 
-The Datacube Guide is an open, community-maintained resource for building and using multi-dimensional data products, built into two parts:
+The Datacube Guide is an open, community-maintained resource for building and using multi-dimensional data products, in two parts:
 
 - a catalog of **worst practices** — what *not to do* when producing and consuming datacubes.
 - a guide to **datacube visualization** — how to render Zarr and other cloud-optimized datacubes dynamically on the web.

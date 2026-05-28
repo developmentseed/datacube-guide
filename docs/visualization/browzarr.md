@@ -1,6 +1,6 @@
 # Browzarr
 
-A browser-native viewer for multi-dimensional Zarr and NetCDF datasets, with first-class 3D volumetric rendering. Maintained by the Max Planck Institute for Biogeochemistry (EarthyScience) under the Apache 2.0 license.
+A browser-native viewer for multi-dimensional Zarr and NetCDF datasets, with first-class 3D volumetric rendering. Maintained by the Max Planck Institute for Biogeochemistry (the EarthyScience GitHub org) under the Apache 2.0 license.
 
 ## At a glance
 
@@ -25,7 +25,7 @@ Three rendering modes share the same data pipeline.
 
 Additional point cloud and block modes handle sparse data. Animation is driven by GSAP for temporal transitions, and post-processing (shadows, bloom) is provided by react-three-postprocessing.
 
-The data pipeline is normalize-to-uint8 then sample. Raw float values are scaled to [0, 1] and uploaded as 8-bit textures; the fragment shader looks them up against one of 70+ colormaps from `js-colormaps-es` (magma, viridis, turbo, Spectral, ...). Adjustable `cOffset` and `cScale` uniforms allow live remapping of the value range without re-uploading texture data, and a separate NaN colour and alpha control nodata appearance.
+The data pipeline is normalize-to-uint8 then sample. Raw float values are scaled to [0, 1] and uploaded as 8-bit textures; the fragment shader looks them up against one of 70+ colormaps from `js-colormaps-es` (magma, viridis, turbo, Spectral, ...). Adjustable `cOffset` and `cScale` uniforms allow live remapping of the value range without re-uploading texture data, and separate NaN-color and alpha controls govern nodata appearance.
 
 ## Zarr handling
 
@@ -33,7 +33,7 @@ Reads use zarrita. An LRU cache (`ZarrLoaderLRU.ts`) holds recently accessed chu
 
 ## Where it fits
 
-Choose Browzarr when the goal is exploration of a multi-dimensional cube as a cube, with volumetric rendering and free 3D camera movement, rather than as a 2D web map. It is also the right starting point for users who want a hosted viewer to point at a Zarr URL with no integration work. It is not a substitute for a basemap-anchored 2D map: if the dataset belongs on top of a vector basemap with picking and panning, deck.gl-raster or zarr-layer are the fits.
+Choose Browzarr when the goal is exploration of a multi-dimensional cube as a cube, with volumetric rendering and free 3D camera movement, rather than as a 2D web map. It is also the right starting point for users who want a hosted viewer to point at a Zarr URL with no integration work. It is not a substitute for a basemap-anchored 2D map: if the dataset belongs on top of a vector basemap with picking and panning, deck.gl-raster or zarr-layer are the better fits.
 
 ## Links
 

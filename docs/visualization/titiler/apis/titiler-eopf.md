@@ -48,7 +48,7 @@ Collection-level mosaic (when a STAC API is configured):
 
 - `/collections/{collection_id}/tiles/{z}/{x}/{y}`
 
-Standard OGC endpoints: `/conformance`, `/tilematrixsets`, `/colormaps`, `/algorithms`.
+Standard OGC endpoints: `/conformance`, `/tileMatrixSets`, `/colorMaps`, `/algorithms`.
 
 Operational: `/_mgmt/ping`, `/_mgmt/health`, `/_mgmt/cache`.
 
