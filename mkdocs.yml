@@ -14,6 +14,7 @@ extra:
 
 nav:
   - "index.md"
+  - Glossary: "glossary.md"
   - Datacube Worst Practices:
       - Common production gotchas:
           - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
@@ -105,6 +106,7 @@ theme:
   features:
     - content.code.annotate
     - content.code.copy
+    - content.tooltips
     - navigation.indexes
     - navigation.instant
     - navigation.tracking
@@ -147,6 +149,7 @@ plugins:
             - https://pandas.pydata.org/docs/objects.inv
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
   - codehilite:
@@ -169,7 +172,9 @@ markdown_extensions:
       hide_protocol: true
       repo_url_shortener: true
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true
