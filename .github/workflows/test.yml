@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+# Deny by default; the job grants only what it needs.
+permissions: {}
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout the repo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install a specific version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests with coverage
+        # The 90% coverage gate is configured in pyproject.toml
+        # ([tool.coverage.report] fail_under) and enforced by pytest-cov.
+        run: uv run -- pytest --cov
