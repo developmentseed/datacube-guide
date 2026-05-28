@@ -83,12 +83,14 @@ stubs and string-annotation lookups), so it does not start clean.
 
 ## Code quality
 
-[`pre-commit`](https://pre-commit.com/) runs `ruff`, `codespell`, `mypy`, and
-`numpydoc-validation`. Install the hooks once, then run them before pushing:
+[`prek`](https://github.com/j178/prek) — a fast, drop-in replacement for `pre-commit` that
+reads the same `.pre-commit-config.yaml` — runs `ruff`, `codespell`, `mypy`, and
+`numpydoc-validation`. Install it (e.g. `uv tool install prek`), install the git hooks once,
+then run the checks before pushing:
 
 ```bash
-pre-commit install
-pre-commit run --all-files
+prek install
+prek run --all-files
 ```
 
 - **`ruff`** handles lint and formatting.
@@ -100,7 +102,7 @@ pre-commit run --all-files
 ## Submitting changes
 
 1. Branch off `main`.
-2. Make your change, and ensure `uv run -- mkdocs build --strict` and `pre-commit run --all-files`
+2. Make your change, and ensure `uv run -- mkdocs build --strict` and `prek run --all-files`
    both pass.
 3. Open a pull request describing the change. CI runs the strict build; merges to `main`
    publish to GitHub Pages (versioned via [`mike`](https://github.com/jimporter/mike)).
