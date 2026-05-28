@@ -164,14 +164,16 @@ Swath
     along its orbit; the sensor's native acquisition geometry, indexed by
     along-track × across-track with 2-D geolocation arrays. Typical of
     Level-1/Level-2 products, distinct from a Level-3 product resampled onto a
-    regular map grid. See ESA Sentinel Online —
-    [Sentinel-1 product types and processing levels][s1-products].
+    regular map grid. See Copernicus SentiWiki —
+    [Sentinel-1 products][s1-products].
 
 Analysis-ready data (ARD)
-:   Satellite data processed to a minimum set of requirements and organized so
-    it can be analyzed immediately, with minimal further user effort, and
-    interoperably across products. The formal reference is **CEOS-ARD**
-    (formerly CARD4L). See CEOS — [Analysis Ready Data][ceos-ard].
+:   Any dataset that has been preprocessed such that it fulfills the quality
+    standards required by the analysis to be performed on it. For satellite
+    Earth observation specifically, CEOS-ARD (formerly CARD4L) is the
+    community standard. See Stern et al., *Frontiers in Climate* (2021) —
+    [Pangeo Forge: Crowdsourcing Analysis-Ready, Cloud Optimized Data
+    Production][ard-frontiers].
 
 Data processing levels
 :   A maturity ladder describing how far a product has been processed, from raw
@@ -185,7 +187,7 @@ Timeliness (NRT/STC/NTC)
     Critical, and Non Time Critical (best calibration accuracy). Independent of
     processing level. See Copernicus SentiWiki — [Sentinel-3 products][s3-products].
 
-[s1-products]: https://sentinel.esa.int/web/sentinel/user-guides/sentinel-1-sar/product-types-processing-levels
-[ceos-ard]: https://ceos.org/ard/
+[s1-products]: https://sentiwiki.copernicus.eu/web/s1-products
+[ard-frontiers]: https://www.frontiersin.org/journals/climate/articles/10.3389/fclim.2021.782909/full
 [nasa-levels]: https://www.earthdata.nasa.gov/learn/earth-observation-data-basics/data-processing-levels
-[s3-products]: https://sentiwiki.copernicus.eu/web/s3-products
+[s3-products]: https://sentiwiki.copernicus.eu/web/sentinel-3
