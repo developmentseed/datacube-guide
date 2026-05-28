@@ -1,6 +1,6 @@
 # zarr-cesium
 
-CesiumJS providers for visualizing Zarr datasets directly on the Cesium 3D globe, with separate paths for 2D imagery, 3D volumetric slices, and animated vector fields. Maintained by the National Oceanography Centre (NOC) UK under the MIT license.
+CesiumJS provides for visualizing Zarr datasets directly on the Cesium 3D globe, with separate paths for 2D imagery, 3D volumetric slices, and animated vector fields. Maintained by the National Oceanography Centre (NOC) UK under the MIT license.
 
 ## At a glance
 

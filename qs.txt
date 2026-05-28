@@ -1,0 +1,10 @@
+other thoughts
+- zarr-layer is a focused alternative to deck.gl-raster for users who want Zarr on a web map but do not want to introduce deck.gl
+  - should this just say zarr layer is for users who want Zarr on a web map for systems already using mapbox gl?
+- sometimes i see rendering host and sometimes engine, should these be considerd the same and used consistently?
+- carbonplan/maps could be introduced as legacy to zarr-layer 
+
+questions:
+- What does it mean?
+  "GDAL-native raster"
+  "COG and STAC are the design center"

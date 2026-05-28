@@ -55,7 +55,7 @@ A few requirements pin the choice on a single feature, before the tree applies:
 For users on a non-image-rendering reader:
 
 1. **Operating a backend server is OK?** If yes, see the [server-side comparison](ecosystem-comparison.md) for [TiTiler](titiler/overview.md) vs [xpublish-tiles](xpublish/xpublish-tiles.md). If no, continue client-side.
-2. **Application or library?** A pre-built application means point a hosted viewer at a Zarr URL: choose [Browzarr](browzarr.md) for general exploration or 3D cubes, or [GridLook](gridlook.md) for non-rectilinear climate-model grids. A library means embed a renderer into your own application: continue.
+2. **Application or library?** A pre-built application means pointing a hosted viewer at a Zarr URL: choose [Browzarr](browzarr.md) for general exploration or 3D cubes, or [GridLook](gridlook.md) for non-rectilinear climate-model grids. A library means embed a renderer into your own application: continue.
 3. **Which rendering host?** [deck.gl](deck.gl-raster.md) for the deck.gl ecosystem, [CesiumJS](zarr-cesium.md) for a 3D globe, or [zarr-layer](zarr-layer.md) for MapLibre/Mapbox.
 
 [`@carbonplan/maps`](carbonplan-maps.md) is documented for catalog completeness and remains the rendering backbone of CarbonPlan's published visualizations, but for new work it isn't in the recommendation path: it requires data to be pre-baked into Web Mercator `ndpyramid` pyramids, which commits you to a regeneration pipeline and the same frozen-styling trade-offs that pre-rendering normally implies.
