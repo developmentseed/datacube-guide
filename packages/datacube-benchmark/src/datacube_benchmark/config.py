@@ -1,16 +1,19 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 import zarr.codecs
 
 
 @dataclass
 class Config:
-    create_data = True
-    compressor = zarr.codecs.BloscCodec(
-        cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle
+    create_data: bool = True
+    compressor: Any = field(
+        default_factory=lambda: zarr.codecs.BloscCodec(
+            cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle
+        )
     )
-    target_array_size = "25 MB"
-    data_var = "data"
-    num_samples = 1
-    warmup_samples = 0
-    credential_provider = None
-    zarr_concurrency = 128
+    target_array_size: str = "25 MB"
+    data_var: str = "data"
+    num_samples: int = 1
+    warmup_samples: int = 0
+    credential_provider: Any = None
+    zarr_concurrency: int = 128

@@ -109,7 +109,7 @@ def find_chunk_shape(
     elif target_chunk_shape == "dumpling":
         chunk_width = np.ceil(np.cbrt(chunk_thickness))
         return (chunk_width, chunk_width, chunk_width)
-    else:
+    else:  # pragma: no cover - get_slice_size already rejects unknown shapes
         raise ValueError(
             f"Unrecognized chunk shape. Got {target_chunk_shape}, expected one of {TARGET_SHAPES}"
         )

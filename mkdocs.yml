@@ -32,7 +32,7 @@ nav:
       - Overview: "visualization/overview.md"
       - Dynamic tilers:
           - Comparison: "visualization/ecosystem-comparison.md"
-          - Titiler:
+          - TiTiler:
               - Ecosystem overview: "visualization/titiler/overview.md"
               - APIs:
                   - "visualization/titiler/apis/index.md"

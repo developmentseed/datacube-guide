@@ -17,6 +17,7 @@ from .utils import validate_object_store_contains_zarr
 from .config import Config
 import obstore as obs
 import zarr
+import zarr.abc.store
 
 if TYPE_CHECKING:
     from pint import Quantity
@@ -317,11 +318,12 @@ def create_or_open_zarr_store(
     """
     Either create or open a zarr array with the specified target chunk size
     """
-    obstore_kwargs: dict[str, Any] = (
-        {"credential_provider": config.credential_provider}
-        if config.credential_provider
-        else {"skip_signature": True}
-    )
+    if config.credential_provider:  # pragma: no cover - needs real cloud credentials
+        obstore_kwargs: dict[str, Any] = {
+            "credential_provider": config.credential_provider
+        }
+    else:
+        obstore_kwargs = {"skip_signature": True}
     object_store = obs.store.from_url(url, **obstore_kwargs)
     if config.create_data:
         zarr_store = create_zarr_store(
