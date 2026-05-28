@@ -9,21 +9,21 @@ A custom map layer that renders Zarr directly inside MapLibre GL or Mapbox GL JS
 - **Map host** — MapLibre GL or Mapbox GL JS v3+, via the native `CustomLayerInterface`
 - **Render API** — WebGL2, hand-written GLSL
 - **Zarr versions** — v2 and v3, autodetected
-- **Conventions** — Tiled XYZ; experimental support for GeoZarr `multiscales` in untiled mode (other GeoZarr metadata — CRS, geo-projection — is not parsed)
+- **Conventions** — Untiled reads from a single Zarr store (recommended) or pre-tiled XYZ; GeoZarr `multiscales` supported in untiled mode (other GeoZarr metadata — CRS, geo-projection — is not parsed)
 
 ## What it does
 
-zarr-layer is a focused alternative to deck.gl-raster for users who want Zarr on a web map but do not want to introduce deck.gl. It plugs into MapLibre or Mapbox v3 as a native custom layer, so it composes with vector basemaps, Mapbox-style projections, and existing layer-management code without the deck.gl runtime. The README acknowledges deck.gl-raster as inspiration and reuses `@developmentseed/raster-reproject` for mesh generation, but the surface area and dependency footprint are deliberately smaller.
+zarr-layer is a focused alternative to deck.gl-raster for users who want Zarr on a web map but do not want to introduce deck.gl. It plugs into MapLibre or Mapbox v3 as a native custom layer, so it composes with vector basemaps, the mercator and globe projections (the only two zarr-layer currently supports, though Mapbox itself offers more), and existing layer-management code without the deck.gl runtime. The README acknowledges deck.gl-raster as inspiration and reuses `@developmentseed/raster-reproject` for mesh generation, but the surface area and dependency footprint are deliberately smaller.
 
 ## How it renders
 
 The layer compiles WebGL2 shaders that normalize values via `(value - clim.min) / (clim.max - clim.min)`, clamp, then look up a 1D RGB16F colormap texture. Multi-band selectors load multiple variables into separate textures and expose them as named GLSL variables (sanitized for shader identifiers), so a NDVI fragment can be written as `(B08 - B04) / (B08 + B04)` directly. Custom fragment shader strings are a supported extension point.
 
-Two rendering modes coexist. **Tiled mode** assumes the data is already in Web Mercator or geographic XYZ tiles and renders against the standard MapLibre/Mapbox tile grid. **Untiled mode**, marked experimental, loads chunks intersecting the viewport at a zoom-appropriate level and supports arbitrary CRS via a proj4 string plus an adaptive Delaunay reprojection mesh. Polar coverage works on MapLibre out of the box; on Mapbox it requires an experimental `renderPoles: true` flag that uses Mapbox internals.
+Two rendering modes coexist, auto-selected from the supplied dataset. The names describe whether the source is pre-arranged as slippy-map XYZ tiles, not whether the Zarr is chunked — all Zarr arrays are chunked. **Tiled mode** is the legacy path: it assumes the data is already in Web Mercator or geographic XYZ tiles (as produced by `ndpyramid` for `@carbonplan/maps`) and renders against the standard MapLibre/Mapbox tile grid. **Untiled mode** is the recommended direction: it reads the chunks intersecting the viewport at a zoom-appropriate level directly from a single Zarr store and supports arbitrary CRS via a proj4 string plus an adaptive Delaunay reprojection mesh. Polar coverage works on MapLibre out of the box; on Mapbox it requires an experimental `renderPoles: true` flag that uses Mapbox internals.
 
 ## Zarr handling
 
-Reads use zarrita and detect v3 first, falling back to v2. Codecs supported through zarrita include bytes, zlib, gzip, blosc, lz4, zstd, transpose, crc32c, and bitround, with custom codecs registrable. Spatial dimensions are configured via the `spatialDimensions` option; non-spatial dimensions are sliced via a `selector` API that defaults to index 0 for unspecified dims and accepts either positional indices or coordinate-value lookups. CF conventions like `scale_factor`, `add_offset`, and `_FillValue` are honoured during normalization. Only the `multiscales` portion of GeoZarr is implemented (experimental, untiled mode); CRS and geo-projection metadata are not parsed and must be supplied by the caller.
+Reads use zarrita and detect v3 first, falling back to v2. Codecs supported through zarrita include bytes, zlib, gzip, blosc, lz4, zstd, transpose, crc32c, and bitround, with custom codecs registrable. Spatial dimensions are configured via the `spatialDimensions` option; non-spatial dimensions are sliced via a `selector` API that defaults to index 0 for unspecified dims and accepts either positional indices or coordinate-value lookups. CF conventions like `scale_factor`, `add_offset`, and `_FillValue` are honoured during normalization. Only the `multiscales` portion of GeoZarr is implemented (untiled mode); CRS and geo-projection metadata are not parsed and must be supplied by the caller.
 
 ## Where it fits
 
