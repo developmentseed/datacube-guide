@@ -1,44 +1,44 @@
-# Titiler Ecosystem Overview
+# TiTiler ecosystem overview
 
-The TiTiler ecosystem is a comprehensive suite of Python tools for creating dynamic tile servers from geospatial datasets. The components are organized by their primary function and built upon a layered architecture that provides flexibility and specialization for different use cases.
+The TiTiler ecosystem is a layered Python stack for building dynamic tile servers from geospatial datasets. Each component fills a specific role: a foundation library, several focused extensions, and a set of opinionated applications targeting concrete data ecosystems (NASA CMR, NASA VEDA, ESA EOPF, generic COG/STAC). Components are released independently and pinned to compatible major-version ranges.
 
-## Architecture and Relationships
+For a side-by-side comparison with the Xpublish ecosystem, see the [Dynamic tiling ecosystem comparison](../ecosystem-comparison.md).
 
-The TiTiler ecosystem follows a layered architecture that promotes code reuse and specialization:
+## Foundation
 
-### Foundation Layer
-- **[rio-tiler](https://github.com/cogeotiff/rio-tiler)**: Core tile generation engine
-- **[titiler.core](https://github.com/developmentseed/titiler/tree/main/src/titiler/core)**: Base FastAPI framework and patterns
+- **[rio-tiler](https://github.com/cogeotiff/rio-tiler)** — core tile generation engine. TiTiler 2.x requires `rio-tiler>=9,<10`.
+- **[titiler.core](https://github.com/developmentseed/titiler/tree/main/src/titiler/core)** — the base FastAPI framework, factory patterns, and dependency primitives used by every TiTiler application.
 
-### Extension Layer
-- **[titiler.xarray](https://github.com/developmentseed/titiler/tree/main/src/titiler/xarray)**: Multidimensional data support extending titiler.core
-- **[titiler.extensions](https://github.com/developmentseed/titiler/tree/main/src/titiler/extensions)**: Plugin system for custom functionality
-- **[titiler.mosaic](https://github.com/developmentseed/titiler/tree/main/src/titiler/mosaic)**: Multi-source tiling capabilities
+## Extensions
 
-### Application Layer
-- **[titiler.application](https://github.com/developmentseed/titiler/tree/main/src/titiler/application)**: Reference implementation using titiler.core
-- **[titiler-multidim](https://github.com/developmentseed/titiler-multidim)**: Prototype application using titiler.xarray + optimizations
-- **[titiler-cmr](https://github.com/developmentseed/titiler-cmr)**: NASA-specific application using titiler.core + CMR integration
-- **[titiler-eopf](https://github.com/EOPF-Explorer/titiler-eopf)**: ESA-specific application using titiler.xarray + EOPF integration
+- **[titiler.xarray](https://github.com/developmentseed/titiler/tree/main/src/titiler/xarray)** — multidimensional support that extends `titiler.core` with xarray-based readers for NetCDF, Zarr, and similar formats. As of TiTiler 2.0 the application also exposes `/zarr/*` endpoints by default.
+- **[titiler.extensions](https://github.com/developmentseed/titiler/tree/main/src/titiler/extensions)** — plugin system for custom factory behavior (viewers, custom endpoints, dataset metadata, etc.).
+- **[titiler.mosaic](https://github.com/developmentseed/titiler/tree/main/src/titiler/mosaic)** — multi-source mosaic tiling on top of MosaicJSON.
 
-### Key Relationships
+## Applications
 
-#### **titiler.core → titiler.xarray**
+- **[titiler.application](https://github.com/developmentseed/titiler/tree/main/src/titiler/application)** — reference application bundling `titiler.core`, `titiler.mosaic`, and (since 2.0) the `/zarr/*` endpoints from `titiler.xarray`. Public demo at [titiler.xyz](https://titiler.xyz/api.html).
+- **[titiler-cmr](apis/titiler-cmr.md)** — NASA Common Metadata Repository application. Now built on both `titiler.core` and `titiler.xarray` with dual `/xarray/` and `/rasterio/` backend prefixes (formerly `/collections/*`, which still redirect).
+- **[titiler-multidim](apis/titiler-multidim.md)** — VEDA-deployed multidimensional application built on `titiler.xarray`. Adds Redis caching, OpenTelemetry tracing, and (since v0.7) Icechunk support. No longer labeled a prototype.
+- **[titiler-eopf](apis/titiler-eopf.md)** — ESA Copernicus / Earth Observation Processing Framework application. Built on `titiler.xarray` plus `titiler.stacapi`, with a custom GeoZarr reader for hierarchical Zarr DataTrees. Can deploy as either a TiTiler REST API or an OpenEO backend from the same image.
 
-`titiler.xarray` extends the core framework with xarray-based readers and multidimensional dataset support, inheriting all core functionality while adding temporal and dimensional processing capabilities.
+## Installation note
 
-#### **titiler.xarray → titiler-multidim / titiler-eopf applications**
+The bare `titiler` metapackage on PyPI was dropped in late 2025. Install the specific subpackages you need: `pip install titiler.core titiler.xarray titiler.mosaic`, or one of the application packages directly.
 
-Both `titiler-multidim` and `titiler.eopf` are built on `titiler.xarray`, leveraging its multidimensional capabilities while adding their own optimizations:
+## Layering at a glance
 
-- `titiler-multidim` adds Redis caching, VEDA platform integration, and prototypes of optimizations
-- `titiler-eopf` adds EOPF-specific data structures, collection/item routing, and ESA workflow integrations
+```
+rio-tiler
+   ↑
+titiler.core ─── titiler.extensions ─── titiler.mosaic
+   ↑                                         ↑
+   └────────── titiler.xarray ───────────────┤
+                       ↑                     │
+                       ├── titiler.application
+                       ├── titiler-cmr (also uses titiler.core + titiler.mosaic directly)
+                       ├── titiler-multidim
+                       └── titiler-eopf (also uses titiler.stacapi)
+```
 
-#### **titiler.core → titiler-cmr application**
-
-`titiler-cmr` is built directly on `titiler.core` rather than `titiler.xarray` due to the development timeline of the two projects. In the future, we anticipate
-`titiler-cmr` will depend on `titiler.xarray`, with progress tracked by [titiler-cmr issue #35](https://github.com/developmentseed/titiler-cmr/issues/35).
-
----
-
-*The TiTiler ecosystem provides a complete stack for building scalable, cloud-native tile servers that can handle everything from simple COG serving to complex multi-dimensional scientific datasets.*
+Python support across the stack is currently 3.11 through 3.14.

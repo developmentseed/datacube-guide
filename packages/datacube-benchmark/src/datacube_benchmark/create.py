@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Literal, Any, Hashable
 from dask import array as da
 import numpy as np
 import xarray as xr
-from pint import UnitRegistry, Quantity
+from pint import Quantity
 from .defaults import (
     default_longitude_coords,
     default_latitude_coords,
@@ -23,8 +23,6 @@ if TYPE_CHECKING:
     from .types import TARGET_SHAPES
     from numcodecs.abc import Codec
     from zarr.abc.codec import BytesBytesCodec
-
-ureg = UnitRegistry()
 
 
 def _write_using_obstore(

@@ -14,6 +14,7 @@ extra:
 
 nav:
   - "index.md"
+  - Glossary: "glossary.md"
   - Datacube Worst Practices:
       - Common production gotchas:
           - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
@@ -30,6 +31,7 @@ nav:
   - Datacube Visualization:
       - Overview: "visualization/overview.md"
       - Dynamic tilers:
+          - Comparison: "visualization/ecosystem-comparison.md"
           - Titiler:
               - Ecosystem overview: "visualization/titiler/overview.md"
               - APIs:
@@ -37,21 +39,30 @@ nav:
                   - "visualization/titiler/apis/titiler-core.md"
                   - "visualization/titiler/apis/titiler-cmr.md"
                   - "visualization/titiler/apis/titiler-multidim.md"
-          - Xpublish-tiles: "visualization/xpublish-tiles.md"
+                  - "visualization/titiler/apis/titiler-eopf.md"
+          - Xpublish:
+              - Ecosystem overview: "visualization/xpublish/overview.md"
+              - xpublish-tiles: "visualization/xpublish/xpublish-tiles.md"
       - Rendering layers:
+          - Comparison: "visualization/client-side-comparison.md"
           - Carbonplan-maps: "visualization/carbonplan-maps.md"
           - Deck.gl-raster: "visualization/deck.gl-raster.md"
-          - Numeric-data-layer: "visualization/numeric-data-layer.md"
           - Zarr-cesium: "visualization/zarr-cesium.md"
-          - Zarr-gl: "visualization/zarr-gl.md"
           - Zarr-layer: "visualization/zarr-layer.md"
+          - Superseded:
+              - Numeric-data-layer: "visualization/numeric-data-layer.md"
+              - Zarr-gl: "visualization/zarr-gl.md"
       - Applications:
           - Browzarr: "visualization/browzarr.md"
+          - GridLook: "visualization/gridlook.md"
 
   - API Reference:
       - Benchmarking:
           - "api-reference/datacube-benchmark.md"
   - Related Guides: "related.md"
+
+hooks:
+  - hooks/mkdocs_jupyter_md_filter.py
 
 watch:
   - packages
@@ -95,6 +106,7 @@ theme:
   features:
     - content.code.annotate
     - content.code.copy
+    - content.tooltips
     - navigation.indexes
     - navigation.instant
     - navigation.tracking
@@ -137,6 +149,7 @@ plugins:
             - https://pandas.pydata.org/docs/objects.inv
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
   - codehilite:
@@ -159,7 +172,9 @@ markdown_extensions:
       hide_protocol: true
       repo_url_shortener: true
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true

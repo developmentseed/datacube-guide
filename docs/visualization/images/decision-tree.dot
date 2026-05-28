@@ -1,0 +1,88 @@
+// Decision tree for selecting a Zarr visualization approach.
+// Render with:  dot -Tsvg decision-tree.dot -o decision-tree.svg
+
+digraph DecisionTree {
+    rankdir=TB
+    bgcolor="transparent"
+    nodesep=0.4
+    ranksep=0.55
+    splines=polyline
+
+    node [fontname="Helvetica,Arial,sans-serif" fontsize=11]
+    edge [fontname="Helvetica,Arial,sans-serif" fontsize=10 color="#546E7A"]
+
+    // Entry point
+    Start [label="Visualize Zarr\nin a browser" shape=ellipse style=filled
+           fillcolor="#CFD8DC" color="#37474F" fontcolor="#263238"]
+
+    // Questions (diamonds)
+    Q2  [label="OK operating\na backend server?"
+         shape=diamond style=filled fillcolor="#FAFAFA" color="#455A64"]
+    Q2a [label="Existing ecosystem?"
+         shape=diamond style=filled fillcolor="#FAFAFA" color="#455A64"]
+    Q3  [label="Application\nor library?"
+         shape=diamond style=filled fillcolor="#FAFAFA" color="#455A64"]
+    Q3a [label="What shape\nof view?"
+         shape=diamond style=filled fillcolor="#FAFAFA" color="#455A64"]
+    Q4  [label="Which rendering host?"
+         shape=diamond style=filled fillcolor="#FAFAFA" color="#455A64"]
+
+    // Server-side (blue)
+    Xpub [label="xpublish-tiles" shape=box style="rounded,filled"
+          fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1"]
+    Tit  [label="TiTiler" shape=box style="rounded,filled"
+          fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1"]
+
+    // Client-side libraries (green)
+    Deck [label="deck.gl-raster" shape=box style="rounded,filled"
+          fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+    Ces  [label="zarr-cesium" shape=box style="rounded,filled"
+          fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+    ZL   [label="zarr-layer" shape=box style="rounded,filled"
+          fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+
+    // Client-side applications (orange)
+    Brow [label="Browzarr" shape=box style="rounded,filled"
+          fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C"]
+    Grid [label="GridLook" shape=box style="rounded,filled"
+          fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C"]
+
+    // Edges
+    Start -> Q2
+
+    Q2 -> Q2a [label="Yes, server-side"]
+    Q2 -> Q3  [label="No, client-side"]
+
+    Q2a -> Xpub [label="xarray-first,\nplugin model"]
+    Q2a -> Tit  [label="broad formats,\nSTAC, NASA-style"]
+
+    Q3 -> Q3a [label="Application"]
+    Q3 -> Q4  [label="Library"]
+
+    Q3a -> Brow [label="3D volumetric\nor general 2D"]
+    Q3a -> Grid [label="Climate-model\nnative grid"]
+
+    Q4 -> Deck [label="deck.gl\n(optionally with a\nMapLibre/Mapbox, Google Maps,\nor other basemap)"]
+    Q4 -> Ces  [label="CesiumJS"]
+    Q4 -> ZL   [label="MapLibre/Mapbox,\nno deck.gl dependency"]
+
+    // Legend (subgraph cluster)
+    subgraph cluster_legend {
+        label="Outcome categories"
+        labelloc="t"
+        fontname="Helvetica,Arial,sans-serif"
+        fontsize=10
+        fontcolor="#455A64"
+        style="rounded,dashed"
+        color="#B0BEC5"
+
+        L_server [label="Server-side tiler" shape=box style="rounded,filled"
+                  fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1" fontsize=10]
+        L_lib    [label="Client-side library" shape=box style="rounded,filled"
+                  fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20" fontsize=10]
+        L_app    [label="Viewer application" shape=box style="rounded,filled"
+                  fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C" fontsize=10]
+
+        L_server -> L_lib -> L_app [style=invis]
+    }
+}

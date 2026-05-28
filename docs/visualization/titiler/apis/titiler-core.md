@@ -1,18 +1,36 @@
-# TiTiler Core API Reference
+# titiler.core API reference
 
-TiTiler Core provides the foundational API patterns used across all TiTiler applications. It handles Cloud Optimized GeoTIFFs (COGs) and SpatioTemporal Asset Catalog (STAC) items.
+`titiler.core` is the foundation of the TiTiler ecosystem: a FastAPI framework with factory patterns for building dynamic tile servers, plus the reference application that combines it with `titiler.mosaic` and (since 2.0) `/zarr/*` endpoints from `titiler.xarray`. Currently at v2.0.x, requires `rio-tiler>=9,<10` and Python 3.11–3.14.
 
-## Key Features
+## Key features
 
-- **COG Support**: Optimized Cloud Optimized GeoTIFF processing
-- **STAC Integration**: Full SpatioTemporal Asset Catalog support
-- **OGC Compliance**: Standards-compliant tile serving
-- **Extensible Architecture**: Foundation for specialized applications
-- **High Performance**: Optimized for cloud-native workflows
+- **COG support** — Cloud Optimized GeoTIFF processing via `rio-tiler`.
+- **STAC integration** — full SpatioTemporal Asset Catalog support, including remote item URLs.
+- **Zarr endpoints** — `/zarr/*` is now part of the default reference application via `titiler.xarray`.
+- **OGC compliance** — XYZ, WMTS, and partial OGC Maps API support.
+- **Extensible architecture** — factory pattern that the other applications (`titiler-cmr`, `titiler-multidim`, `titiler-eopf`) all build on.
 
-## Interactive API Documentation
+## Notable changes in 2.0
 
-The complete, interactive API documentation from the Development demo deployment is below. Please be kind with this API.
+- `256x256` is no longer the implicit default tile size; `/tilejson.json` defaults to `tilesize=512` and `/map.html` to `tilesize=256`, and `tilesize` is an optional query parameter on tile and tilejson endpoints.
+- `MultiBandTilerFactory` removed. Multi-band selection is handled through the standard factory.
+- The `@{scale}x` suffix on tile endpoints removed; use `tilesize` instead.
+- Deprecated parsers `AssetsBidxParams`, `BandsParams`, and related dependency helpers removed.
+- WMTS endpoints expose tile dependencies in OpenAPI; performance improvements landed in 2.0.1.
+
+## Installation
+
+The bare `titiler` PyPI package was dropped in late 2025. Install subpackages directly:
+
+```bash
+pip install titiler.core titiler.mosaic titiler.xarray
+# or, for the bundled reference application:
+pip install titiler.application
+```
+
+## Interactive API documentation
+
+The complete, interactive API documentation from the public demo deployment is below. Please be kind with this API.
 
 <iframe src="https://titiler.xyz/api.html"
         width="100%"
@@ -21,20 +39,22 @@ The complete, interactive API documentation from the Development demo deployment
         style="border: 1px solid #ddd; border-radius: 4px;">
 </iframe>
 
-## Quick Links
+## Quick links
 
 - [Open API docs in new tab](https://titiler.xyz/api.html){:target="_blank"}
 - [OpenAPI Schema JSON](https://titiler.xyz/api){:target="_blank"}
-- [TiTiler Demo Landing Page](https://titiler.xyz/){:target="_blank"}
+- [TiTiler demo landing page](https://titiler.xyz/){:target="_blank"}
+- [Source on GitHub](https://github.com/developmentseed/titiler){:target="_blank"}
 
-## Main Endpoint Categories
+## Main endpoint categories
 
-- **COG Endpoints**: `/cog/*` - Cloud Optimized GeoTIFF processing
-- **STAC Endpoints**: `/stac/*` - SpatioTemporal Asset Catalog integration
-- **Mosaic Endpoints**: `/mosaicjson/*` - Multi-source mosaicking
-- **Algorithms**: `/algorithms` - Available processing algorithms
-- **Color Maps**: `/colorMaps` - Available visualization color schemes
-- **TMS**: `/tileMatrixSets` - Supported tiling schemes
+- `/cog/*` — Cloud Optimized GeoTIFF processing.
+- `/stac/*` — SpatioTemporal Asset Catalog integration.
+- `/mosaicjson/*` — Multi-source mosaicking via `titiler.mosaic`.
+- `/zarr/*` — Zarr / xarray reading via `titiler.xarray` (new standard endpoint as of 2.0).
+- `/algorithms` — Available processing algorithms.
+- `/colorMaps` — Available colormaps.
+- `/tileMatrixSets` — Supported tiling schemes.
 
-!!! info "Foundation Layer"
-    TiTiler Core serves as the foundation that all other TiTiler applications build upon, providing consistent API patterns and core functionality.
+!!! info "Foundation layer"
+    `titiler.core` is the foundation that the other TiTiler applications build on. Anything documented for the reference application here is generally available, possibly under a different route prefix, in the application-specific pages.

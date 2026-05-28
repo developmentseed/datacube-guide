@@ -92,3 +92,7 @@ tests/.hypothesis
 docs/_site
 site
 .mypy_cache
+
+# Node.js (screenshot capture script in scripts/)
+node_modules/
+package-lock.json
