@@ -23,7 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.0.2
         with:
-          fetch-depth: 1
+          # Full history + tags so hatch-vcs can resolve the package version
+          # during `uv sync` (the editable install runs the version hook).
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install a specific version of uv

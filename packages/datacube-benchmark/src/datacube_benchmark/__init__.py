@@ -11,7 +11,13 @@ from .open import benchmark_dataset_open
 
 import numpy as np
 
+try:
+    from ._version import __version__
+except ImportError:  # pragma: no cover - _version.py is generated at build time
+    __version__ = "0.0.0+unknown"
+
 __all__ = [
+    "__version__",
     "Config",
     "create_empty_dataarray",
     "create_zarr_store",

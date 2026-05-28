@@ -6,6 +6,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+packages/datacube-benchmark/src/datacube_benchmark/_version.py
 .Python
 env/
 .venv/
