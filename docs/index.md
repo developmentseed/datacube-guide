@@ -1,6 +1,9 @@
 # About
 
-The datacube worst practices guidebook is intended as an open, community-maintained resource that communicates what *not to do* when building and using multi-dimensional data products.
+The Datacube Guide is an open, community-maintained resource for building and using multi-dimensional data products, built into two parts:
+
+- a catalog of **worst practices** — what *not to do* when producing and consuming datacubes.
+- a guide to **datacube visualization** — how to render Zarr and other cloud-optimized datacubes dynamically on the web.
 
 ## Datacube production gotchas
 
@@ -75,6 +78,38 @@ The datacube worst practices guidebook is intended as an open, community-maintai
     ---
 
     [:octicons-arrow-right-24: Using old libraries](worst-practices/old-libraries.md)
+
+</div>
+
+## Datacube visualization
+
+How to render Zarr and other cloud-optimized datacubes dynamically on the web — the rendering stack, server-side tilers, client-side libraries, and viewer applications.
+
+<div class="grid cards" markdown>
+
+-   __Start here: Overview__
+
+    ---
+
+    Concepts, the dynamic-visualization architecture, and a decision tree for choosing an approach.
+
+    [:octicons-arrow-right-24: Visualization overview](visualization/overview.md)
+
+-   __Dynamic tiling servers__
+
+    ---
+
+    Serving datacubes as tiles from a backend: TiTiler vs Xpublish compared.
+
+    [:octicons-arrow-right-24: Dynamic tiling ecosystem comparison](visualization/ecosystem-comparison.md)
+
+-   __Client-side rendering__
+
+    ---
+
+    Browser libraries and viewers that read Zarr directly: deck.gl-raster, zarr-layer, zarr-cesium, Browzarr, GridLook.
+
+    [:octicons-arrow-right-24: Client-side rendering comparison](visualization/client-side-comparison.md)
 
 </div>
 
