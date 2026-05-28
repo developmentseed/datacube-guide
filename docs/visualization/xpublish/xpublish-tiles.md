@@ -1,6 +1,6 @@
 # xpublish-tiles
 
-A FastAPI-based xpublish plugin that turns xarray datasets into raster and vector tiles, with a focus on the unstructured and curvilinear grids used in operational ocean and atmospheric models. Maintained by Earth Mover under the Apache 2.0 license.
+A FastAPI-based xpublish plugin that turns xarray datasets into raster and vector tiles, with a focus on the unstructured and curvilinear grids used in operational ocean and atmospheric models. Maintained by Earthmover under the Apache 2.0 license.
 
 ## At a glance
 
