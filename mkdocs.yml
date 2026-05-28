@@ -15,6 +15,7 @@ extra:
 nav:
   - "index.md"
   - Glossary: "glossary.md"
+  - Data structures: "concepts/data-structures.md"
   - Datacube Worst Practices:
       - Common production gotchas:
           - Tiny data chunks: "worst-practices/tiny-chunks.ipynb"
