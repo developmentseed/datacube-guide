@@ -1,0 +1,2471 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Max Jones">
+      
+      
+        <link rel="canonical" href="https://developmentseed.org/datacube-guide/1.0/visualization/client-side-comparison.html">
+      
+      
+        <link rel="prev" href="xpublish/xpublish-tiles.html">
+      
+      
+        <link rel="next" href="carbonplan-maps.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Comparison - Datacube Guide</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_markdown_exec_pyodide.css">
+    
+      <link rel="stylesheet" href="../assets/_markdown_exec_ansi.css">
+    
+      <link rel="stylesheet" href="../overrides/stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#client-side-rendering-comparison" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../..">
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL(".."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Datacube Guide" class="md-header__button md-logo" aria-label="Datacube Guide" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Datacube Guide
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Comparison
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/developmentseed/datacube-guide" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datacube-guide
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Datacube Guide" class="md-nav__button md-logo" aria-label="Datacube Guide" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Datacube Guide
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/developmentseed/datacube-guide" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datacube-guide
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/data-structures.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datacube Worst Practices
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Datacube Worst Practices
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common production gotchas
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Common production gotchas
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/tiny-chunks.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tiny data chunks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/massive-chunks.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Massive data chunks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/tiny-coordinate-chunks.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tiny coordinate chunks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/dispersed-metadata.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dispersed metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/non-standardized-metadata.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-standardized metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/bloated-datatypes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bloated datatypes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common usage gotchas
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Common usage gotchas
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/xarray-combine-defaults.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Default Xarray combine arguments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/fsspec-caching-defaults.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Default FSSpec caching arguments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/gdal-defaults.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Default GDAL config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../worst-practices/old-libraries.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using old libraries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datacube Visualization
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Datacube Visualization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="overview.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamic tilers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dynamic tilers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ecosystem-comparison.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2_2" id="__nav_5_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TiTiler
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    TiTiler
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="titiler/overview.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="titiler/apis/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    APIs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_2_2_2" id="__nav_5_2_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_5_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    APIs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="titiler/apis/titiler-core.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    titiler.core API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="titiler/apis/titiler-cmr.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    titiler-cmr API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="titiler/apis/titiler-multidim.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    titiler-multidim API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="titiler/apis/titiler-eopf.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    titiler-eopf API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2_3" id="__nav_5_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Xpublish
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Xpublish
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="xpublish/overview.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="xpublish/xpublish-tiles.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    xpublish-tiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rendering layers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Rendering layers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="client-side-comparison.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rendering-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Applications
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-framing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project framing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-gpu-work-happens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the GPU work happens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geospatial-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geospatial integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zarr-depth-and-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zarr depth and conventions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#picking-the-right-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Picking the right tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="carbonplan-maps.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Carbonplan-maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="deck.gl-raster.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deck.gl-raster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="zarr-cesium.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zarr-cesium
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="zarr-layer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zarr-layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3_6" id="__nav_5_3_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Superseded
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Superseded
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="numeric-data-layer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numeric-data-layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="zarr-gl.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Zarr-gl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Applications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Applications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="browzarr.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browzarr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="gridlook.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GridLook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://developmentseed.org/datacube-benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../related.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Related Guides
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rendering-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Applications
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-framing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project framing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-gpu-work-happens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the GPU work happens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geospatial-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geospatial integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zarr-depth-and-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zarr depth and conventions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#picking-the-right-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Picking the right tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="client-side-rendering-comparison">Client-side rendering comparison</h1>
+<p>Several browser-side libraries and applications now read Zarr directly (via <a href="https://github.com/manzt/zarrita.js">zarrita</a> or <a href="https://github.com/freeman-lab/zarr-js">zarr-js</a>) and render on the GPU, no tile server required. They differ in what they sit on top of, what they do with the data, and what they assume about its shape. This page is the cross-cutting view; per-library detail lives in the sibling pages under "Rendering layers" and "Applications".</p>
+<p>A parallel comparison for server-side tooling (TiTiler vs Xpublish) is at <a href="ecosystem-comparison.html">Dynamic tiling ecosystem comparison</a>.</p>
+<p>The four libraries below are ordered roughly by host: deck.gl, MapLibre/Mapbox (with <code>@carbonplan/maps</code> and zarr-layer as React-component-vs-custom-layer alternatives on the same host), and Cesium. The two applications are scene-first viewers with no basemap.</p>
+<h2 id="rendering-layers">Rendering layers</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><a href="deck.gl-raster.html">deck.gl-raster</a></th>
+<th><a href="carbonplan-maps.html">@carbonplan/maps</a></th>
+<th><a href="zarr-layer.html">zarr-layer</a></th>
+<th><a href="zarr-cesium.html">zarr-cesium</a></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary author</td>
+<td>Development Seed</td>
+<td>CarbonPlan</td>
+<td>CarbonPlan</td>
+<td>NOC UK (Atlantis)</td>
+</tr>
+<tr>
+<td>Shape</td>
+<td>Library (custom deck.gl layer)</td>
+<td>React component library</td>
+<td>Library (custom map layer)</td>
+<td>Library (3 Cesium provider classes)</td>
+</tr>
+<tr>
+<td>Map host</td>
+<td>deck.gl</td>
+<td>Mapbox GL v1 (bundled) or MapLibre/Mapbox via <code>/core</code></td>
+<td>MapLibre GL / Mapbox GL v3</td>
+<td>CesiumJS (3D globe)</td>
+</tr>
+<tr>
+<td>Render API</td>
+<td>WebGL2 via luma.gl shader modules</td>
+<td>regl, hand-written GLSL</td>
+<td>WebGL2, hand-written GLSL</td>
+<td>WebGL2, custom GLSL inside Cesium primitives</td>
+</tr>
+<tr>
+<td>Geographic context</td>
+<td>Pairs with an external basemap (MapLibre/Mapbox, Google Maps, ...); not used in isolation</td>
+<td>Mapbox/MapLibre basemaps</td>
+<td>MapLibre/Mapbox basemaps, optional adaptive-mesh reprojection</td>
+<td>Cesium globe with imagery layers underneath</td>
+</tr>
+<tr>
+<td>Native projection support</td>
+<td><abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr>, plus arbitrary <abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr> support</td>
+<td><abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> only (validated, throws otherwise)</td>
+<td>EPSG:3857/4326 tiled, arbitrary <abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr> via proj4 in untiled mode</td>
+<td>EPSG:4326 and EPSG:3857 only, autodetected</td>
+</tr>
+<tr>
+<td>Zarr versions</td>
+<td>v3</td>
+<td>v2 (primary) and v3 via <code>version</code> prop, read with <code>zarr-js</code></td>
+<td>v2 and v3, autodetected, via zarrita</td>
+<td>v2 and v3, autodetected, via zarrita</td>
+</tr>
+<tr>
+<td>Conventions</td>
+<td><abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> (spatial, <abbr title="Precomputed downsampled copies of a dataset at multiple resolutions.">multiscales</abbr>, proj)</td>
+<td>Strict <code>ndpyramid</code> <abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> pyramids, <code>multiscales</code> in <code>.zattrs</code></td>
+<td>Tiled XYZ, experimental <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> <code>multiscales</code> support, user-supplied <code>spatialDimensions</code> + proj4 string</td>
+<td><code>ndpyramid</code> <abbr title="Precomputed downsampled copies of a dataset at multiple resolutions.">multiscales</abbr>, CF time decoding, CF dim-name aliasing</td>
+</tr>
+<tr>
+<td>Dimensionality</td>
+<td>N-D, user passes <code>selection</code> per non-spatial dim</td>
+<td>N-D via selector arrays (e.g. <code>{ month: [1,2,3] }</code> → uniforms <code>month_1</code>, <code>month_2</code>, <code>month_3</code>)</td>
+<td>N-D via <code>selector</code> (multi-band selectors load multiple textures)</td>
+<td>2D imagery, 3D volumetric via draped slices, animated U/V vector fields</td>
+</tr>
+<tr>
+<td>Custom shader injection</td>
+<td>Composable luma.gl shader modules + custom modules</td>
+<td><code>frag</code> prop on <code>&lt;Raster&gt;</code></td>
+<td>User-injectable fragment-shader strings, multi-band selectors expose named GLSL variables</td>
+<td>Single fixed shader; geometry varies by provider</td>
+</tr>
+<tr>
+<td>License</td>
+<td>MIT</td>
+<td>MIT</td>
+<td>MIT</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>Maturity</td>
+<td>Released regularly; Zarr support added early 2026</td>
+<td>Mature; powers CarbonPlan's published visualizations</td>
+<td>Pre-1.0, "active experiment"</td>
+<td>Pre-1.0, early development</td>
+</tr>
+</tbody>
+</table>
+<h2 id="applications">Applications</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><a href="browzarr.html">Browzarr</a></th>
+<th><a href="gridlook.html">GridLook</a></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary author</td>
+<td>Jeran Poehls (MPI-BGC)</td>
+<td>DKRZ + MPI-M</td>
+</tr>
+<tr>
+<td>Shape</td>
+<td>Hosted viewer app (Next.js)</td>
+<td>Vue 3 SPA, also embeddable as a Vue component</td>
+</tr>
+<tr>
+<td>Scene host</td>
+<td>three.js + react-three-fiber</td>
+<td>three.js</td>
+</tr>
+<tr>
+<td>Render API</td>
+<td>WebGL / WebGPU, GLSL3 shaders</td>
+<td>WebGL, custom GLSL</td>
+</tr>
+<tr>
+<td>Geographic context</td>
+<td>None, just a sphere or flat plane with lat/lon UVs</td>
+<td>Coastlines and graticules from Natural Earth, no basemap tiles</td>
+</tr>
+<tr>
+<td>Native projection support</td>
+<td>Globe + flat ortho only</td>
+<td>8 projections plus 3D nearside-perspective globe</td>
+</tr>
+<tr>
+<td>Zarr versions</td>
+<td>v2 and v3, plus <abbr title="A self-describing array format common in earth-science data.">NetCDF</abbr> (wasm) and Icechunk</td>
+<td>v2 and v3</td>
+</tr>
+<tr>
+<td>Conventions</td>
+<td>CF <code>_ARRAY_DIMENSIONS</code>, no <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr></td>
+<td>CF (<code>grid_mapping</code>, <code>_FillValue</code>, lat/lon coords)</td>
+</tr>
+<tr>
+<td>Dimensionality</td>
+<td>N-D, with 3D volume raycasting as a first-class mode</td>
+<td>2D fields with time slider; 8 grid topologies (regular, rotated, HEALPix, ICON triangular, Gaussian-reduced, curvilinear, irregular Delaunay)</td>
+</tr>
+<tr>
+<td>License</td>
+<td>Apache 2.0</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>Maturity</td>
+<td>Pre-1.0</td>
+<td>1.0 released April 2026</td>
+</tr>
+</tbody>
+</table>
+<h2 id="project-framing">Project framing</h2>
+<p><strong>deck.gl-raster</strong> is the most architecturally ambitious: a monorepo of small packages layered so that the raster pipeline is generic over its tile source. Zarr is one backend, <abbr title="Cloud-Optimized GeoTIFF, structured for efficient range-request access.">COG</abbr> is the other, and they share the same renderer. It plugs into deck.gl, so users get the rest of the deck.gl ecosystem for free. (Supersedes the earlier <code>numeric-data-layer</code>.)</p>
+<p><strong><code>@carbonplan/maps</code></strong> is the original "dynamic client" library. A React component library built on <code>regl</code> and Mapbox GL v1, it is the rendering backbone of CarbonPlan's published visualizations (CMIP6 downscaling, seaweed farming, forest carbon). It assumes data is in a <abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> <code>ndpyramid</code> and validates that strictly; the trade-off for that constraint is a small, opinionated <code>&lt;Map&gt;</code> + <code>&lt;Raster&gt;</code> API and a polished <code>frag</code> prop for custom-shader injection.</p>
+<p><strong>zarr-layer</strong> is the newer CarbonPlan project, designed to relax <code>@carbonplan/maps</code>'s assumptions. It implements MapLibre/Mapbox's <code>CustomLayerInterface</code> directly (not React-shaped), supports both tiled and untiled modes, handles arbitrary <abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr> via proj4 with adaptive Delaunay reprojection, and works with both v2 and v3 via zarrita. The trade-off is that it is less mature (an "active experiment") than the production-tested <code>@carbonplan/maps</code>. (Also supersedes the earlier <code>zarr-gl</code>.)</p>
+<p><strong>zarr-cesium</strong> is the same library shape (plug into an existing map host) but the host is Cesium. It exposes three Cesium provider classes for three different visualization shapes: a <code>ZarrLayerProvider</code> for 2D imagery on the globe, a <code>ZarrCubeProvider</code> for 3D volumetric data rendered as draped slices, and a <code>ZarrCubeVelocityProvider</code> that hands U/V components to <code>cesium-wind-layer</code> for animated particle visualization. Built by NOC for oceanographic and atmospheric use cases.</p>
+<p><strong>Browzarr</strong> is a hosted viewer rather than a library, built on three.js and react-three-fiber. Its distinguishing feature is genuine 3D volumetric rendering via raycasting. There is no embeddable npm package and no basemap; the Earth is rendered as a textured sphere when geographic, otherwise the data is a free-floating cube.</p>
+<p><strong>GridLook</strong> is a Vue 3 viewer with a clearly geoscience-shaped scope: visualizing climate-model output on the native grid topology the model used. Its raison d'être is the eight grid-type detectors (HEALPix, ICON triangular, Gaussian-reduced, rotated lat-lon, ...), not raster pyramids.</p>
+<h2 id="where-the-gpu-work-happens">Where the GPU work happens</h2>
+<p>All of these normalize values, apply a colormap, and handle nodata on the GPU; CPU only does I/O and bookkeeping. Differences are in composition.</p>
+<ul>
+<li><strong>deck.gl-raster</strong> exposes the pipeline as composable luma.gl shader modules. A user passes <code>renderPipeline: [LinearRescale, Colormap, FilterNoDataVal, ...]</code> and the framework wires uniforms and texture bindings. <code>CompositeBands</code> allows up to four band textures with per-band UV transforms, which is how the published NDVI and AlphaEarth-embeddings examples work.</li>
+<li><strong><code>@carbonplan/maps</code></strong> uses hand-written GLSL via regl. Multi-band is expressed via selector arrays that lift to GLSL uniforms (<code>{ month: [1,2,3] }</code> becomes <code>month_1</code>, <code>month_2</code>, <code>month_3</code> in the shader), and the <code>frag</code> prop on <code>&lt;Raster&gt;</code> lets users inject custom fragment-shader logic for averaging, differencing, and conditional masking.</li>
+<li><strong>zarr-layer</strong> uses fixed shader templates with user-injectable fragment-shader strings. Multi-band is supported via <code>selector: { band: ['B08', 'B04'] }</code>, which loads each band into its own texture and exposes them as named GLSL variables, so NDVI is <code>(B08 - B04) / (B08 + B04)</code> in a custom fragment.</li>
+<li><strong>zarr-cesium</strong> runs a single fragment shader that handles <code>scale_factor</code>/<code>add_offset</code>, NaN/nodata masking, normalization, and colormap LUT lookup. The interesting variation is in geometry rather than shading: the 2D provider tiles into Cesium's standard imagery scheme, the 3D provider loads a cube into memory as an <code>ndarray</code> and renders user-positioned horizontal/vertical slices as Cesium primitives, and the velocity provider feeds U/V slices to the third-party <code>cesium-wind-layer</code> particle simulator.</li>
+<li><strong>Browzarr</strong> has fixed shaders per render mode (volumetric raycasting, sphere displacement, flat orthographic). The pipeline is normalize-to-uint8, sample colormap LUT, apply transfer function with NaN color and alpha. Live remap via <code>cOffset</code>/<code>cScale</code> uniforms avoids re-uploading texture data when the user drags the color-range slider.</li>
+<li><strong>GridLook</strong> also uses purpose-built shaders, with the twist that the <em>projection</em> runs on the GPU. d3-geo computes geometry on the CPU once, then GLSL handles per-pixel reprojection so panning a Mollweide globe stays smooth. Colormap is a 1D LUT after normalization (offset + scale-factor) and optional posterization.</li>
+</ul>
+<h2 id="geospatial-integration">Geospatial integration</h2>
+<p>The host environment is the cleanest dividing line.</p>
+<p><strong>deck.gl-raster</strong>, <strong><code>@carbonplan/maps</code></strong>, and <strong>zarr-layer</strong> are 2D-map-first. They sit inside an existing web-map ecosystem (deck.gl and Mapbox/MapLibre respectively), inherit basemap, attribution, picking, and projection handling, and primarily produce slippy-tile views. <code>@carbonplan/maps</code> enforces <abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> strictly; deck.gl-raster and zarr-layer have escape hatches for non-Mercator data, but the default mental model is "raster on a web map."</p>
+<p>deck.gl is not itself a basemap provider, and most deck.gl users <a href="https://deck.gl/docs/get-started/using-with-map">pair it with a basemap</a> — most commonly MapLibre/Mapbox, but also Google Maps, OpenLayers, or ArcGIS. When interleaved with MapLibre/Mapbox, deck.gl renders through the <em>same</em> <code>CustomLayerInterface</code> that zarr-layer implements directly, so the Zarr layer draws inside the MapLibre layer stack (the <a href="https://developmentseed.org/deck.gl-raster/examples/dynamical-zarr-ecmwf/">ECMWF example</a> renders the Zarr data underneath the basemap's text labels this way). The difference from zarr-layer is that deck.gl is an abstraction that is <em>not</em> tied to MapLibre/Mapbox: you can use it with them, but you are not forced to.</p>
+<p><strong>zarr-cesium</strong> is globe-first. The host is CesiumJS, with its imagery layers underneath the data, so the integration story matches the 2D-map libraries (plug into the host's standard extension points), but the canvas is a 3D globe rather than a 2D web map.</p>
+<p><strong>Browzarr</strong> and <strong>GridLook</strong> are scene-first with no basemap. Browzarr renders into a free three.js scene where the geographic case is just one of several render modes; volumetric raycasting has no map analogue. GridLook draws the Earth as a 3D sphere with coastlines and graticules, plus eight 2D projections, but at no point is there a tile basemap underneath.</p>
+<h2 id="zarr-depth-and-conventions">Zarr depth and conventions</h2>
+<p><strong>deck.gl-raster</strong> has the most opinionated metadata stance: a separate <code>@developmentseed/geozarr</code> package parses the <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> conventions (spatial, <abbr title="Precomputed downsampled copies of a dataset at multiple resolutions.">multiscales</abbr>, proj). For datasets without <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> metadata, you can pass in <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> metadata by hand. It produces a generic <code>TilesetDescriptor</code>, which <code>@developmentseed/deck.gl-zarr</code>'s <code>ZarrLayer</code> feeds into the same renderer that <abbr title="Cloud-Optimized GeoTIFF, structured for efficient range-request access.">COG</abbr> uses. Zarr v2, OME-NGFF, and CF are listed as future work.</p>
+<p><strong><code>@carbonplan/maps</code></strong> is strict in a different way: it requires the data already be an <code>ndpyramid</code> <abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> pyramid with <code>multiscales</code> metadata in <code>.zattrs</code>. There is no in-browser <abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr> reprojection and no untiled mode; the assumption is all preprocessing happens upstream.</p>
+<p><strong>zarr-layer</strong> is convention-light by comparison: tiled XYZ where the user supplies the spatial-dim mapping, plus experimental support for the <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> <code>multiscales</code> convention. It does not parse the rest of <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr> (<abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr>, geo-projection metadata) — projection is user-supplied as a proj4 string.</p>
+<p><strong>zarr-cesium</strong> uses <code>ndpyramid</code> for multiscale, decodes CF time, and aliases common CF dimension names. No <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr>; only EPSG:4326 and EPSG:3857 are supported, so curvilinear or rotated grids must be reprojected upstream.</p>
+<p><strong>Browzarr</strong> reads <code>_ARRAY_DIMENSIONS</code> (CF) for axis names but isn't trying to be a geospatial tool, so projections, <abbr title="Coordinate reference system: how coordinates map to locations on Earth.">CRS</abbr>, and tiling conventions don't really apply.</p>
+<p><strong>GridLook</strong> leans hard on CF (<code>grid_mapping</code>, <code>_FillValue</code>/<code>missing_value</code>, lat/lon variable detection) and on grid-topology detection rather than on <abbr title="A geospatial convention layered on top of Zarr (multiscales, CRS encoding).">GeoZarr</abbr>. The HEALPix and ICON-triangular paths in particular are well outside what the others handle.</p>
+<h2 id="picking-the-right-tool">Picking the right tool</h2>
+<ul>
+<li>For web mapping in deck.gl (optionally <a href="https://deck.gl/docs/get-started/using-with-map">integrating with</a> basemaps such as MapLibre/Mapbox, Google Maps, OpenLayers, ArcGIS): <strong>deck.gl-raster</strong> with its new Zarr layer.</li>
+<li>For Zarr on MapLibre/Mapbox without a deck.gl dependency: <strong>zarr-layer</strong>.</li>
+<li>For environmental, oceanographic, or atmospheric data on a Cesium 3D globe, especially with 3D slices or animated vector fields: <strong>zarr-cesium</strong>.</li>
+<li>For exploratory science visualization, especially anything volumetric or where you want a hosted viewer for a Zarr URL: <strong>Browzarr</strong>.</li>
+<li>For climate-model output on its native grid (HEALPix, ICON, rotated lat-lon, Gaussian-reduced) with multiple cartographic projections: <strong>GridLook</strong>.</li>
+</ul>
+<p><code>@carbonplan/maps</code> is intentionally omitted from the recommendation list. It is the rendering backbone of CarbonPlan's published visualizations, but for new work the requirement that data be pre-baked into <code>ndpyramid</code> <abbr title="The map projection (EPSG:3857) used by most web map tiles.">Web Mercator</abbr> pyramids carries the same trade-offs as any pre-rendering pipeline: frozen projection, frozen pyramid structure, and a regen step on every data update. zarr-layer is the more flexible CarbonPlan path for new MapLibre/Mapbox integrations.</p>
+<p>Roughly: deck.gl-raster, zarr-layer, and zarr-cesium are libraries you embed in a host map or globe; Browzarr and GridLook are scenes/apps you point at data. Within the libraries, the host (deck.gl, MapLibre/Mapbox, Cesium) is the choice. Within the apps, the choice is exploratory 3D versus ESM-grid-aware 2D/3D.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="ecosystem-comparison.html">Dynamic tiling ecosystem comparison</a>: server-side tooling (TiTiler vs Xpublish).</li>
+<li><a href="https://nasa-impact.github.io/zarr-visualization-report/">NASA-IMPACT Zarr Visualization Report</a>: empirical benchmarks for Zarr v3 sharding, pyramid choices, AWS region effects, and pixels-per-tile, from the 2024 study.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.code.copy", "content.tooltips", "navigation.indexes", "navigation.instant", "navigation.tracking", "search.suggest", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/_markdown_exec_pyodide.js"></script>
+      
+    
+  </body>
+</html>
