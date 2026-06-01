@@ -7,6 +7,16 @@ docs_dir: docs
 site_url: "https://developmentseed.org/datacube-guide/"
 use_directory_urls: false
 
+# Keep non-published files out of the built site/, and therefore out of the
+# gh-pages branch mike deploys. mkdocs copies every non-page file in docs_dir
+# into site/ verbatim, so the Graphviz .dot sources (kept in the repo as the
+# source for the rendered .svg diagrams) and macOS Finder .DS_Store files would
+# otherwise be published. The repo .gitignore can't cover this: it governs the
+# source repo, but mike commits the built site/ to gh-pages bypassing it.
+exclude_docs: |
+  .DS_Store
+  *.dot
+
 extra:
   version:
     alias: true
