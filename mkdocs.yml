@@ -57,9 +57,7 @@ nav:
           - Browzarr: "visualization/browzarr.md"
           - GridLook: "visualization/gridlook.md"
 
-  - API Reference:
-      - Benchmarking:
-          - "api-reference/datacube-benchmark.md"
+  - API Reference: "https://developmentseed.org/datacube-benchmark/"
   - Related Guides: "related.md"
 
 hooks:
@@ -118,34 +116,8 @@ extra_css:
 
 plugins:
   - search
-  - autorefs
   - markdown-exec
   - mkdocs-jupyter
-  - mkdocstrings:
-      enable_inventory: true
-      handlers:
-        python:
-          options:
-            allow_inspection: false
-            docstring_section_style: list
-            docstring_style: numpy
-            line_length: 80
-            separate_signature: true
-            show_root_heading: true
-            show_signature_annotations: true
-            show_source: false
-            show_symbol_type_toc: true
-            signature_crossrefs: true
-
-          inventories:
-            - https://docs.python.org/3/objects.inv
-            - https://docs.xarray.dev/en/stable/objects.inv
-            - https://numpy.org/doc/stable/objects.inv
-            - https://numcodecs.readthedocs.io/en/stable/objects.inv
-            - https://zarr.readthedocs.io/en/stable/objects.inv
-            - https://developmentseed.org/obstore/latest/objects.inv
-            - https://pint.readthedocs.io/en/stable/objects.inv
-            - https://pandas.pydata.org/docs/objects.inv
 
 markdown_extensions:
   - abbr

@@ -29,8 +29,6 @@ dev = [
     "mkdocs-jupyter>=0.25.0",
     "mkdocs-material[imaging]>=9.6.3",
     "mkdocs-redirects>=1.2.2",
-    "mkdocstrings>=0.27.0",
-    "mkdocstrings-python>=1.13.0",
     "pip>=24.2",
     "ruff>=0.12.0",
 ]
