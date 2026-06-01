@@ -118,3 +118,5 @@ How to render Zarr and other cloud-optimized datacubes dynamically on the web â€
 ## Acknowledgements
 
 The Datacube Guide was initiated in partnership with the Microsoft Planetary Computer team. We recommend checking out the wonderful work going on as part of the [Microsoft Planetary Computer Pro service](https://learn.microsoft.com/en-us/azure/planetary-computer/) as well as the [Open Planetary Computer Data Catalog](https://planetarycomputer.microsoft.com/). We greatly appreciate Microsoft's dedication to supporting open resources and building impactful geospatial services.
+
+The latest updates to this guide were supported by NASA's Office of Data Science and Informatics (ODSI) as part of the Data Systems Evolution team. The Data Systems Evolution team at NASA Marshall Space Flight Center's Office of Data Science and Informatics enables scientific exploration and discovery through innovative data visualization techniques and analysis capabilities that lower the barrier to entry for cloud-hosted data.

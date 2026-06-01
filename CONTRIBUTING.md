@@ -1,30 +1,32 @@
 # Contributing to the Datacube Guide
 
-Thanks for your interest in improving the guide! This repository is a [`uv`](https://docs.astral.sh/uv/)
-workspace holding two things:
+Thanks for your interest in improving the guide! This repository is the
+**MkDocs Material documentation site** published at
+[developmentseed.org/datacube-guide](https://developmentseed.org/datacube-guide/),
+managed as a [`uv`](https://docs.astral.sh/uv/) project.
 
-- the **MkDocs Material documentation site** (`docs/`), published at
-  [developmentseed.org/datacube-guide](https://developmentseed.org/datacube-guide/), and
-- the **`datacube_benchmark` Python package** (`packages/datacube-benchmark/`), a library
-  for measuring Zarr read patterns and access costs.
+The notebooks that generate the worst-practices figures depend on the
+[`datacube-benchmark`](https://github.com/developmentseed/datacube-benchmark)
+library, which lives in its own repository and is installed here from
+PyPI like any other dependency. Library changes go in that repo; this
+repo only consumes the released package.
 
 See the [README](README.md) for a higher-level overview.
 
 ## Development setup
 
 Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/), then install the
-workspace and its dev dependencies:
+project and its dev dependencies:
 
 ```bash
 uv sync
 ```
 
-Run all tooling through `uv run` so it uses the workspace environment.
+Run all tooling through `uv run` so it uses the project environment.
 
 ```bash
 uv run -- mkdocs serve            # live-reload docs at http://localhost:8000
 uv run -- mkdocs build --strict   # what CI runs; fails on any warning
-uv run python main.py             # smoke-test the benchmark library
 ```
 
 ## The strict build is the gate
@@ -67,26 +69,11 @@ done
 Some diagrams (e.g. the static-vs-dynamic comparison and the grid-topologies figure) are
 hand-authored SVG with no `.dot` source — edit the `.svg` directly.
 
-## Working on the benchmark package
-
-The public API is re-exported from `packages/datacube-benchmark/src/datacube_benchmark/__init__.py`.
-The library is built on `zarr`, `obstore`, `xarray`, `dask`, and `pint`, and routes storage I/O
-through `obstore` stores rather than fsspec/paths directly.
-
-```bash
-uv run mypy                       # type-check (files configured in pyproject.toml)
-uv run ruff check . && uv run ruff format .
-```
-
-Note: `uv run mypy` currently reports a handful of pre-existing errors (missing third-party
-stubs and string-annotation lookups), so it does not start clean.
-
 ## Code quality
 
 [`prek`](https://github.com/j178/prek) — a fast, drop-in replacement for `pre-commit` that
-reads the same `.pre-commit-config.yaml` — runs `ruff`, `codespell`, `mypy`, and
-`numpydoc-validation`. Install it (e.g. `uv tool install prek`), install the git hooks once,
-then run the checks before pushing:
+reads the same `.pre-commit-config.yaml` — runs `ruff` and `codespell`. Install it (e.g.
+`uv tool install prek`), install the git hooks once, then run the checks before pushing:
 
 ```bash
 prek install
@@ -96,8 +83,6 @@ prek run --all-files
 - **`ruff`** handles lint and formatting.
 - **`codespell`** has a custom ignore list in `.codespellrc` — add genuine false positives
   there rather than disabling the check.
-- **Docstrings are numpy-style**, enforced by `numpydoc-validation` (checks listed in
-  `pyproject.toml`); keep signatures within an 80-char line length for autodoc.
 
 ## Submitting changes
 
