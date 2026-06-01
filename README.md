@@ -10,45 +10,38 @@ Read the guide at [developmentseed.org/datacube-guide](https://developmentseed.o
 
 ## What's inside
 
-This is a [`uv`](https://docs.astral.sh/uv/) workspace holding two
-deliverables:
+The guide (`docs/`) is published at
+[developmentseed.org/datacube-guide](https://developmentseed.org/datacube-guide/)
+and covers:
 
-- **The guide** (`docs/`) — published at
-  [developmentseed.org/datacube-guide](https://developmentseed.org/datacube-guide/),
-  covering:
-    - **Worst practices** — common pitfalls when producing and using
-      multi-dimensional data products: chunking, metadata, datatypes,
-      and default library configs (FSSpec, GDAL, Xarray).
-    - **Visualization** — a catalog and comparison of tools for
-      visualizing Zarr-backed datacubes in the browser, covering both
-      server-side dynamic tilers (TiTiler, Xpublish-tiles) and
-      client-side rendering with deck.gl, MapLibre/Mapbox, and Cesium,
-      plus standalone viewer apps.
-- **The `datacube-benchmark` Python package**
-  (`packages/datacube-benchmark/`) — a library for measuring Zarr read
-  patterns and access costs, used both standalone and to generate
-  content in the guide.
+- **Worst practices** — common pitfalls when producing and using
+  multi-dimensional data products: chunking, metadata, datatypes, and
+  default library configs (FSSpec, GDAL, Xarray).
+- **Visualization** — a catalog and comparison of tools for visualizing
+  Zarr-backed datacubes in the browser, covering both server-side
+  dynamic tilers (TiTiler, Xpublish-tiles) and client-side rendering
+  with deck.gl, MapLibre/Mapbox, and Cesium, plus standalone viewer
+  apps.
 
-## Using the benchmark package
+The notebooks that generate the worst-practices figures use the
+[`datacube-benchmark`](https://github.com/developmentseed/datacube-benchmark)
+Python package — a library for measuring Zarr read patterns and access
+costs — which lives in its own repository and is installable from PyPI:
 
 ```bash
 pip install datacube-benchmark
 ```
-
-See the [package README](packages/datacube-benchmark/README.md) for a
-quickstart and the [API reference](https://developmentseed.org/datacube-guide/)
-for the full surface.
 
 ## Working on the guide locally
 
 ```bash
 git clone https://github.com/developmentseed/datacube-guide.git
 cd datacube-guide
-uv sync                              # install workspace + dev deps
+uv sync                              # install dev deps
 uv run -- mkdocs serve --livereload  # docs at http://localhost:8000
 ```
 
-To experiment with the benchmark library in a notebook:
+To experiment in a notebook:
 
 ```bash
 uv run ipython kernel install --user \
@@ -56,9 +49,8 @@ uv run ipython kernel install --user \
 uv run --with jupyter jupyter lab
 ```
 
-For the full development workflow — strict docs build, tests,
-type-checking, regenerating diagrams — see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+For the full development workflow — strict docs build, regenerating
+diagrams — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Acknowledgements
 
@@ -80,5 +72,5 @@ barrier to entry for cloud-hosted data.
 
 ## License
 
-`datacube-guide` and `datacube-benchmark` are distributed under the
-terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`datacube-guide` is distributed under the terms of the
+[MIT](https://spdx.org/licenses/MIT.html) license.
