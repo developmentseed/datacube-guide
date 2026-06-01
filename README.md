@@ -1,7 +1,6 @@
 # Datacube Guide
 
 [![Docs](https://img.shields.io/badge/docs-developmentseed.org%2Fdatacube--guide-blue)](https://developmentseed.org/datacube-guide/)
-[![PyPI](https://img.shields.io/pypi/v/datacube-benchmark.svg)](https://pypi.org/project/datacube-benchmark/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Practical guidance for producing, using, and visualizing datacubes.
