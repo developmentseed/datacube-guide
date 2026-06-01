@@ -4,10 +4,10 @@ This page compares the two main [FastAPI](https://fastapi.tiangolo.com)-based ec
 
 !!! tip "Which should I use?"
 
-    - **TiTiler** — COG/STAC-first, GDAL-native raster, fast cold start, and a mature cloud-deploy story (Docker, Lambda/ECS). Reach for it when your data is regular or projected raster, or when you need NASA CMR/VEDA or ESA EOPF integrations.
+    - **TiTiler** — COG/STAC-first, GDAL-native raster, fast cold start, and a mature cloud-deploy story (Docker, Lambda/ECS). Reach for it when your data is regular or projected raster, or when you need [NASA CMR](https://cmr.earthdata.nasa.gov/search/) or [ESA EOPF](https://eof.esa.int/eopf/) integrations.
     - **Xpublish** — xarray-native, with first-class support for irregular grids (curvilinear, triangular FVCOM, HEALPix, cubed-sphere) and a pick-your-protocol plugin model (tiles, WMS, OGC EDR, OPeNDAP). Reach for it for operational scientific data on its native grid.
 
-    The two also compose: TiTiler for public-facing slippy-map tiles, Xpublish for research access to the same data on native grids.
+    TiTiler is intended for public-facing slippy-map tiles. Xpublish for research access to the same data on native grids.
 
 ## Summary
 
@@ -37,7 +37,7 @@ The deeper detail lives on the per-ecosystem pages (linked from the table header
 
 **Who names the dataset.** This is the difference that drives deployment and security. TiTiler takes the data location as a per-request query parameter (`?url=…`) on generic, stateless endpoints, so any worker serves any request and the service drops onto Lambda/ECS behind a CDN — at the cost of exposing the location in the URL and an open fetch surface that needs allowed-host limits. Xpublish publishes a server-owned namespace (`/datasets/{id}/…`) resolved server-side, so the dataset is curated by the operator and stays resident in the process — which is what enables its `_xpublish_id` caching and stateful EDR/OPeNDAP queries, at the cost of stateful replicas that must share the same registry. (`titiler-eopf` and `titiler-cmr` are path/search exceptions to TiTiler's query-parameter model.)
 
-**Rendering engine.** The engines mirror that split. TiTiler renders through GDAL via `rio-tiler` (full resampling kernels, band-math `expression`s, fast cold start). Xpublish-tiles renders through [Datashader](https://datashader.org) with Numba JIT and a custom [pyproj](https://pyproj4.github.io/pyproj) reprojection — a slow first request in exchange for renderers that handle curvilinear, triangular, and other unstructured grids GDAL can't, picking an engine per grid type.
+**Rendering engine.** The engines mirror that split. TiTiler renders through GDAL via `rio-tiler` (full resampling kernels, band-math `expression`s, fast cold start). Xpublish-tiles renders through [Datashader](https://datashader.org) with [Numba Just-in-Time (JIT)](https://numba.pydata.org/numba-doc/dev/reference/jit-compilation.html) and a custom [pyproj](https://pyproj4.github.io/pyproj) reprojection — a slow first request in exchange for renderers that handle curvilinear, triangular, and other unstructured grids GDAL can't, picking an engine per grid type.
 
 ![Grid topologies — regular, curvilinear, triangular, HEALPix, cubed-sphere — and which stack supports each](images/grid-topologies.svg){ width="100%" }
 
@@ -48,9 +48,10 @@ The deeper detail lives on the per-ecosystem pages (linked from the table header
 - **OGC EDR queries** (position/area/cube extraction, time-series, profiles): **Xpublish** with `xpublish-edr`.
 - **OPeNDAP** clients: **Xpublish** with `opendap-protocol`.
 - **Categorical raster styling** from CF `flag_values`/`flag_meanings`/`flag_colors`, vector tiles, or a legend endpoint: **Xpublish-tiles**.
-- **NASA CMR**, **NASA VEDA**, or **ESA EOPF** data: **TiTiler** via `titiler-cmr`, `titiler-multidim`, or `titiler-eopf` respectively.
+- **NASA CMR** or **ESA EOPF** data: **TiTiler** via `titiler-cmr`, or `titiler-eopf` respectively.
+- **Dynamic tiling of xarray-readable stores (Zarr, NetCDF)**: `titiler-multidim`
 
-The two stacks compose. A common hybrid is TiTiler for public-facing slippy-map tiles (where its Redis cache and Lambda/ECS deploy story shine) and Xpublish-tiles/EDR for research-oriented access to the same datasets on their native grids.
+A common hybrid is TiTiler for public-facing slippy-map tiles (where its Redis cache and Lambda/ECS deploy story shine) and Xpublish-tiles/EDR for research-oriented access to the same datasets on their native grids.
 
 ## Related
 
