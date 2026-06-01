@@ -1,0 +1,73 @@
+// How a high-dimensional datacube reduces to common view shapes.
+// Render with:  dot -Tsvg dimensionality-fan.dot -o dimensionality-fan.svg
+
+digraph DimensionalityFan {
+    rankdir=LR
+    bgcolor="transparent"
+    nodesep=0.35
+    ranksep=1.0
+    splines=true
+
+    node [fontname="Helvetica,Arial,sans-serif" fontsize=11]
+    edge [fontname="Helvetica,Arial,sans-serif" fontsize=10 color="#546E7A"]
+
+    Cube [label=<
+        <B>4–5D datacube</B><BR/>
+        <FONT POINT-SIZE="10">dims: t · z · y · x · band</FONT>
+    > shape=box3d style=filled
+      fillcolor="#CFD8DC" color="#37474F" fontcolor="#263238"
+      width=2 height=1.6]
+
+    Map [label=<
+        <B>2D map</B><BR/>
+        <FONT POINT-SIZE="9">slice at one t, z, band</FONT>
+    > shape=box style="rounded,filled"
+      fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+
+    TS [label=<
+        <B>1D timeseries</B><BR/>
+        <FONT POINT-SIZE="9">point at x, y, z</FONT>
+    > shape=box style="rounded,filled"
+      fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+
+    Profile [label=<
+        <B>Vertical profile</B><BR/>
+        <FONT POINT-SIZE="9">column at x, y, t</FONT>
+    > shape=box style="rounded,filled"
+      fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20"]
+
+    Anim [label=<
+        <B>Animation</B><BR/>
+        <FONT POINT-SIZE="9">2D map swept over t</FONT>
+    > shape=box style="rounded,filled"
+      fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C"]
+
+    Vol [label=<
+        <B>Volumetric 3D</B><BR/>
+        <FONT POINT-SIZE="9">full (z, y, x) at fixed t</FONT>
+    > shape=box style="rounded,filled"
+      fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C"]
+
+    Cube -> Map     [label="reduce to 2D"]
+    Cube -> TS      [label="reduce to 1D"]
+    Cube -> Profile [label="reduce to 1D"]
+    Cube -> Anim    [label="2D + time"]
+    Cube -> Vol     [label="reduce to 3D"]
+
+    // Legend
+    subgraph cluster_legend {
+        label="View shape"
+        labelloc="t"
+        fontname="Helvetica,Arial,sans-serif"
+        fontsize=10
+        fontcolor="#455A64"
+        style="rounded,dashed"
+        color="#B0BEC5"
+
+        L_static [label="Static slice" shape=box style="rounded,filled"
+                  fillcolor="#C8E6C9" color="#2E7D32" fontcolor="#1B5E20" fontsize=10]
+        L_dyn    [label="Time / 3D rendering" shape=box style="rounded,filled"
+                  fillcolor="#FFE0B2" color="#E65100" fontcolor="#BF360C" fontsize=10]
+        L_static -> L_dyn [style=invis]
+    }
+}

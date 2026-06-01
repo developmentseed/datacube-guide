@@ -1,0 +1,66 @@
+// Architecture comparison: TiTiler layered stack vs Xpublish core + plugins.
+// Render with:  dot -Tsvg ecosystem-architecture.dot -o ecosystem-architecture.svg
+
+digraph EcosystemArchitecture {
+    rankdir=TB
+    bgcolor="transparent"
+    nodesep=0.3
+    ranksep=0.45
+    newrank=true
+
+    node [fontname="Helvetica,Arial,sans-serif" fontsize=11
+          shape=box style="rounded,filled" margin="0.12,0.06"]
+    edge [color="#546E7A" arrowsize=0.7]
+
+    // ---- TiTiler: layered stack ----
+    subgraph cluster_tit {
+        label="TiTiler — layered stack"
+        labelloc="t"
+        fontname="Helvetica,Arial,sans-serif" fontsize=12 fontcolor="#0D47A1"
+        style="rounded" color="#90CAF9"
+
+        t_client [label="Client / web map" fillcolor="#ECEFF1" color="#90A4AE" fontcolor="#37474F"]
+        t_api    [label="FastAPI factory\n(titiler.core)" fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1"]
+        t_riot   [label="rio-tiler" fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1"]
+        t_gdal   [label="GDAL / rasterio" fillcolor="#BBDEFB" color="#1565C0" fontcolor="#0D47A1"]
+        t_cache  [label="Redis\ncache" style="rounded,dashed,filled" fillcolor="#FFFFFF" color="#90A4AE" fontcolor="#546E7A"]
+        t_data   [label="COG · STAC ·\nZarr / NetCDF" fillcolor="#ECEFF1" color="#90A4AE" fontcolor="#37474F"]
+
+        t_client -> t_api -> t_riot -> t_gdal -> t_data
+        t_api -> t_cache [style=dashed dir=both arrowsize=0.5]
+    }
+
+    // ---- Xpublish: small core + independent plugins ----
+    subgraph cluster_xpub {
+        label="Xpublish — small core + plugins"
+        labelloc="t"
+        fontname="Helvetica,Arial,sans-serif" fontsize=12 fontcolor="#4A148C"
+        style="rounded" color="#CE93D8"
+
+        x_client [label="Client / web map" fillcolor="#ECEFF1" color="#90A4AE" fontcolor="#37474F"]
+        x_core   [label="FastAPI + xpublish core" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_tiles  [label="xpublish-tiles" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_wms    [label="xpublish-wms" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_edr    [label="xpublish-edr" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_dap    [label="opendap-\nprotocol" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_render [label="datashader / pyproj" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_xr     [label="xarray" fillcolor="#E1BEE7" color="#6A1B9A" fontcolor="#4A148C"]
+        x_data   [label="Zarr · NetCDF · Icechunk" fillcolor="#ECEFF1" color="#90A4AE" fontcolor="#37474F"]
+
+        x_client -> x_core
+        x_core -> x_tiles
+        x_core -> x_wms
+        x_core -> x_edr
+        x_core -> x_dap
+        x_tiles -> x_render
+        x_wms   -> x_render
+        x_render -> x_xr
+        x_edr -> x_xr
+        x_dap -> x_xr
+        x_xr -> x_data
+    }
+
+    // Pin the two stacks side by side
+    {rank=same; t_client; x_client}
+    t_client -> x_client [style=invis constraint=false minlen=3]
+}

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Static vs dynamic datacube visualization.
+  Hand-authored SVG; edit directly.
+  Material palette matches the other figures in this directory.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <!-- Map background gradient: stylised raster -->
+    <linearGradient id="dataGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1565C0"/>
+      <stop offset="40%" stop-color="#26A69A"/>
+      <stop offset="70%" stop-color="#FDD835"/>
+      <stop offset="100%" stop-color="#E65100"/>
+    </linearGradient>
+    <!-- Colourbar gradient: vertical, cool at bottom → warm at top.
+         (y1=1, y2=0 puts the 0% stop at the bottom of the bar.) -->
+    <linearGradient id="cbGrad" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#1565C0"/>
+      <stop offset="40%" stop-color="#26A69A"/>
+      <stop offset="70%" stop-color="#FDD835"/>
+      <stop offset="100%" stop-color="#E65100"/>
+    </linearGradient>
+    <!-- Drop shadow for floating UI controls (zoom, settings, tooltip, thumb) -->
+    <filter id="ctlShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.4" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- ============================================================ -->
+  <!-- LEFT PANEL: static                                            -->
+  <!-- ============================================================ -->
+  <g transform="translate(20, 20)">
+    <text x="176" y="0" text-anchor="middle" font-size="14" font-weight="bold" fill="#263238">Static</text>
+    <text x="176" y="18" text-anchor="middle" font-size="11" fill="#546E7A">decisions baked in at render time</text>
+
+    <!-- Frame (no controls) -->
+    <rect x="0" y="32" width="352" height="220" rx="6" fill="#FFFFFF"
+          stroke="#90A4AE" stroke-width="1.5"/>
+
+    <!-- Map area -->
+    <rect x="14" y="46" width="270" height="180" fill="url(#dataGrad)"/>
+
+    <!-- Frozen colourbar on the right -->
+    <rect x="298" y="46" width="14" height="180" fill="url(#cbGrad)"/>
+    <text x="320" y="52"  font-size="9" fill="#263238">28 °C</text>
+    <text x="320" y="140" font-size="9" fill="#263238">14 °C</text>
+    <text x="320" y="228" font-size="9" fill="#263238">0 °C</text>
+
+    <!-- Title bar on the map -->
+    <rect x="14" y="46" width="270" height="18" fill="#263238" fill-opacity="0.6"/>
+    <text x="22" y="59" font-size="10" fill="#FFFFFF">SST · 2024-01-15 12:00 UTC</text>
+
+    <!-- Annotations underneath -->
+    <g transform="translate(0, 268)" font-size="10" fill="#37474F">
+      <circle cx="6" cy="6" r="2.5" fill="#90A4AE"/>
+      <text x="14" y="9">fixed extent · fixed colormap · fixed timestamp</text>
+      <circle cx="6" cy="22" r="2.5" fill="#90A4AE"/>
+      <text x="14" y="25">one PNG/PDF · regenerate to change anything</text>
+      <circle cx="6" cy="38" r="2.5" fill="#90A4AE"/>
+      <text x="14" y="41">no interaction</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- RIGHT PANEL: dynamic                                          -->
+  <!-- ============================================================ -->
+  <g transform="translate(400, 20)">
+    <text x="176" y="0" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D47A1">Dynamic</text>
+    <text x="176" y="18" text-anchor="middle" font-size="11" fill="#1565C0">decisions deferred to the user</text>
+
+    <!-- Frame -->
+    <rect x="0" y="32" width="352" height="220" rx="6" fill="#FFFFFF"
+          stroke="#1565C0" stroke-width="1.5"/>
+
+    <!-- Map area -->
+    <rect x="14" y="46" width="270" height="180" fill="url(#dataGrad)"/>
+
+    <!-- Title bar -->
+    <rect x="14" y="46" width="270" height="20" fill="#0D47A1" fill-opacity="0.92"/>
+    <text x="22" y="60" font-size="10" fill="#FFFFFF" font-weight="600">SST</text>
+    <text x="42" y="60" font-size="10" fill="#90CAF9">·</text>
+    <text x="49" y="60" font-size="10" fill="#FFFFFF">2024-07-12 12:00 UTC</text>
+    <!-- Three-dot menu (right edge of title bar) -->
+    <g fill="#FFFFFF">
+      <circle cx="272" cy="52" r="1.2"/>
+      <circle cx="272" cy="56" r="1.2"/>
+      <circle cx="272" cy="60" r="1.2"/>
+    </g>
+
+    <!-- Zoom cluster: a single rounded container with + / − and a divider, MapLibre-style -->
+    <g filter="url(#ctlShadow)" transform="translate(22, 76)">
+      <rect width="22" height="44" rx="4" fill="#FFFFFF"/>
+      <line x1="4" y1="22" x2="18" y2="22" stroke="#CFD8DC" stroke-width="0.8"/>
+      <text x="11" y="16" text-anchor="middle" font-size="14" fill="#1565C0" font-weight="bold">+</text>
+      <text x="11" y="37" text-anchor="middle" font-size="16" fill="#1565C0" font-weight="bold">−</text>
+    </g>
+
+    <!-- Settings panel: layer + colormap, like a real viewer control -->
+    <g filter="url(#ctlShadow)" transform="translate(22, 132)">
+      <rect width="120" height="60" rx="4" fill="#FFFFFF"/>
+      <!-- Layer row -->
+      <text x="10" y="14" font-size="7.5" fill="#78909C" font-weight="bold" letter-spacing="0.6">LAYER</text>
+      <text x="10" y="27" font-size="10" fill="#0D47A1">Sea surface temp</text>
+      <path d="M104 23 l4 4 l4 -4" fill="none" stroke="#0D47A1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Divider -->
+      <line x1="10" y1="34" x2="110" y2="34" stroke="#ECEFF1" stroke-width="0.8"/>
+      <!-- Colormap row -->
+      <text x="10" y="45" font-size="7.5" fill="#78909C" font-weight="bold" letter-spacing="0.6">COLORMAP</text>
+      <text x="10" y="56" font-size="10" fill="#0D47A1">Viridis</text>
+      <path d="M104 52 l4 4 l4 -4" fill="none" stroke="#0D47A1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Hover tooltip with triangular tail pointing down-left to the cursor -->
+    <g filter="url(#ctlShadow)">
+      <path d="M168 94
+               L268 94
+               Q272 94 272 98
+               L272 124
+               Q272 128 268 128
+               L196 128
+               L188 138
+               L188 128
+               L172 128
+               Q168 128 168 124
+               Z"
+            fill="#263238" fill-opacity="0.92"/>
+      <text x="174" y="108" font-size="9" fill="#FFFFFF">lat 34.21, lon -118.45</text>
+      <text x="174" y="121" font-size="9" fill="#FFFFFF">SST: 18.5 °C</text>
+    </g>
+    <!-- Cursor point: directly under the tail tip -->
+    <circle cx="188" cy="143" r="3.5" fill="#FFFFFF" stroke="#263238" stroke-width="1.4" filter="url(#ctlShadow)"/>
+
+    <!-- Time slider with tick marks -->
+    <g transform="translate(14, 200)">
+      <rect width="270" height="26" fill="#263238" fill-opacity="0.78"/>
+      <!-- Tick marks -->
+      <g stroke="#90A4AE" stroke-width="0.8" stroke-linecap="round">
+        <line x1="20"  y1="6" x2="20"  y2="9"/>
+        <line x1="68"  y1="6" x2="68"  y2="9"/>
+        <line x1="116" y1="6" x2="116" y2="9"/>
+        <line x1="164" y1="6" x2="164" y2="9"/>
+        <line x1="212" y1="6" x2="212" y2="9"/>
+        <line x1="260" y1="6" x2="260" y2="9"/>
+      </g>
+      <!-- Track -->
+      <line x1="20" y1="13" x2="260" y2="13" stroke="#546E7A" stroke-width="2" stroke-linecap="round"/>
+      <!-- Active portion (from start to thumb) -->
+      <line x1="20" y1="13" x2="164" y2="13" stroke="#FDD835" stroke-width="2.2" stroke-linecap="round"/>
+      <!-- Thumb -->
+      <circle cx="164" cy="13" r="5.5" fill="#FDD835" stroke="#FFFFFF" stroke-width="1.5" filter="url(#ctlShadow)"/>
+      <!-- Endpoint labels -->
+      <text x="10"  y="23" font-size="8" fill="#CFD8DC">2024-01-01</text>
+      <text x="222" y="23" font-size="8" fill="#CFD8DC">2024-12-31</text>
+    </g>
+
+    <!-- Interactive colorbar: data outside the clamped range is greyed out.
+         Bar runs y=46..226; max handle at y=80, min handle at y=200. -->
+    <!-- Clipped-high region (above max) -->
+    <rect x="298" y="46"  width="14" height="34"  fill="#CFD8DC"/>
+    <!-- Active gradient between min and max -->
+    <rect x="298" y="80"  width="14" height="120" fill="url(#cbGrad)"/>
+    <!-- Clipped-low region (below min) -->
+    <rect x="298" y="200" width="14" height="26"  fill="#CFD8DC"/>
+    <!-- Range handles: triangles with the tip touching the bar's left edge -->
+    <g filter="url(#ctlShadow)">
+      <polygon points="298,80 290,75 290,85" fill="#0D47A1"/>
+      <polygon points="298,200 290,195 290,205" fill="#0D47A1"/>
+    </g>
+    <text x="320" y="52"  font-size="9" fill="#0D47A1">max</text>
+    <text x="320" y="228" font-size="9" fill="#0D47A1">min</text>
+
+    <!-- Annotations underneath -->
+    <g transform="translate(0, 268)" font-size="10" fill="#0D47A1">
+      <circle cx="6" cy="6" r="2.5" fill="#1565C0"/>
+      <text x="14" y="9">zoom / pan / hover · swap colormap · clamp range</text>
+      <circle cx="6" cy="22" r="2.5" fill="#1565C0"/>
+      <text x="14" y="25">scrub through time · toggle layers</text>
+      <circle cx="6" cy="38" r="2.5" fill="#1565C0"/>
+      <text x="14" y="41">data fetched on demand from the source</text>
+    </g>
+  </g>
+</svg>
