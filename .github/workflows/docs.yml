@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Install a specific version of uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           # Caching is disabled: this workflow can publish (tag trigger), and a
           # cache poisoned by a lower-privilege run could taint the built docs.
@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
 
       - name: Install a specific version of uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           # Caching is disabled: this workflow can publish (tag trigger), and a
           # cache poisoned by a lower-privilege run could taint the built docs.
